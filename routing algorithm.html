@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Routing Algorithms - Interactive Visualization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #4a90e2;
+            --dark-blue: #2c3e50;
+            --bg-dark: #1a1d29;
+            --bg-card: #252936;
+            --text-primary: #ffffff;
+            --text-secondary: #a8b2d1;
+            --accent-cyan: #64ffda;
+            --accent-green: #80cbc4;
+            --accent-orange: #ffab91;
+            --accent-red: #ef5350;
+            --accent-purple: #c792ea;
+            --border-light: rgba(100, 255, 218, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1d29 0%, #2c3e50 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(100, 255, 218, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 255, 218, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(100, 255, 218, 0.1);
+            border: 2px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-bottom: 2rem;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+            transform: translateX(-5px);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .algorithm-selector {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .algo-btn {
+            padding: 1rem 2.5rem;
+            background: rgba(74, 144, 226, 0.15);
+            border: 2px solid var(--primary-blue);
+            color: var(--primary-blue);
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .algo-btn.active {
+            background: var(--primary-blue);
+            color: white;
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.4);
+        }
+
+        .algo-btn:hover:not(.active) {
+            background: rgba(74, 144, 226, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.875rem 2rem;
+            background: rgba(74, 144, 226, 0.15);
+            border: 2px solid var(--primary-blue);
+            color: var(--primary-blue);
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--primary-blue);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .status-box {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(100, 255, 218, 0.05);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .status-phase {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            font-family: 'Fira Code', monospace;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-desc {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .viz-area {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 2rem;
+            min-height: 600px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Network Node */
+        .network-node {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.3), rgba(100, 255, 218, 0.2));
+            border: 3px solid var(--primary-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: 0 0 30px rgba(74, 144, 226, 0.3);
+            transition: all 0.3s;
+            z-index: 10;
+            cursor: pointer;
+        }
+
+        .network-node:hover {
+            transform: scale(1.1);
+        }
+
+        .network-node.source {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 40px rgba(128, 203, 196, 0.6);
+            background: linear-gradient(135deg, rgba(128, 203, 196, 0.4), rgba(100, 255, 218, 0.3));
+        }
+
+        .network-node.destination {
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 40px rgba(255, 171, 145, 0.6);
+            background: linear-gradient(135deg, rgba(255, 171, 145, 0.4), rgba(255, 193, 122, 0.3));
+        }
+
+        .network-node.visited {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 40px rgba(100, 255, 218, 0.8);
+            animation: nodePulse 1s ease-in-out;
+        }
+
+        .network-node.in-path {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 50px rgba(128, 203, 196, 0.8);
+            background: linear-gradient(135deg, rgba(128, 203, 196, 0.5), rgba(100, 255, 218, 0.4));
+        }
+
+        @keyframes nodePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        .node-distance {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 0.25rem 0.5rem;
+            border-radius: 5px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            font-weight: 700;
+            white-space: nowrap;
+            display: none;
+        }
+
+        .network-node.visited .node-distance,
+        .network-node.in-path .node-distance {
+            display: block;
+        }
+
+        /* Edge weight label */
+        .edge-weight {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.7rem;
+            color: var(--accent-orange);
+            font-weight: 700;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Algorithm Info */
+        .algo-info {
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 10px 30px rgba(100, 255, 218, 0.15);
+        }
+
+        .info-title {
+            color: var(--accent-cyan);
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .info-content {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        .info-content strong {
+            color: var(--text-primary);
+        }
+
+        /* Routing Table */
+        .routing-table {
+            margin-top: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            overflow-x: auto;
+        }
+
+        .routing-table h3 {
+            color: var(--accent-cyan);
+            margin-bottom: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+        }
+
+        th {
+            background: rgba(100, 255, 218, 0.1);
+            color: var(--accent-cyan);
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 700;
+        }
+
+        td {
+            padding: 0.75rem;
+            border-top: 1px solid var(--border-light);
+            color: var(--text-secondary);
+        }
+
+        tr:hover {
+            background: rgba(100, 255, 218, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .network-node { width: 55px; height: 55px; font-size: 1rem; }
+            .viz-area { min-height: 500px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <div class="container">
+        <a href="index.html" class="back-btn">← Back to Topics</a>
+        
+        <header>
+            <h1>Routing Algorithms</h1>
+            <p class="subtitle">Finding Shortest Paths Through Networks</p>
+        </header>
+
+        <div class="algorithm-selector">
+            <button class="algo-btn active" onclick="selectAlgorithm('dijkstra')" id="btnDijkstra">
+                Dijkstra's Algorithm
+            </button>
+            <button class="algo-btn" onclick="selectAlgorithm('bellman-ford')" id="btnBellman">
+                Bellman-Ford Algorithm
+            </button>
+        </div>
+
+        <div class="controls">
+            <button onclick="runAlgorithm()" id="runBtn">▶ Run Algorithm</button>
+            <button onclick="reset()">🔄 Reset</button>
+        </div>
+
+        <div class="status-box">
+            <div class="status-phase" id="statusPhase">READY</div>
+            <div class="status-desc" id="statusDesc">Select algorithm and click "Run" to find shortest path from A to F</div>
+        </div>
+
+        <div class="viz-area" id="vizArea">
+            <svg id="edgesSvg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;">
+            </svg>
+
+            <!-- Network Nodes -->
+            <div class="network-node source" style="top: 20%; left: 10%;">
+                A
+                <div class="node-distance" id="distA">0</div>
+            </div>
+            <div class="network-node" style="top: 15%; left: 40%;">
+                B
+                <div class="node-distance" id="distB">∞</div>
+            </div>
+            <div class="network-node" style="top: 15%; right: 10%;">
+                C
+                <div class="node-distance" id="distC">∞</div>
+            </div>
+            <div class="network-node" style="top: 50%; left: 25%;">
+                D
+                <div class="node-distance" id="distD">∞</div>
+            </div>
+            <div class="network-node" style="top: 50%; right: 25%;">
+                E
+                <div class="node-distance" id="distE">∞</div>
+            </div>
+            <div class="network-node destination" style="bottom: 15%; left: 50%; transform: translateX(-50%);">
+                F
+                <div class="node-distance" id="distF">∞</div>
+            </div>
+        </div>
+
+        <div class="routing-table">
+            <h3>📊 Routing Table - Final Results</h3>
+            <table id="routingTable">
+                <thead>
+                    <tr>
+                        <th>Destination</th>
+                        <th>Distance</th>
+                        <th>Next Hop</th>
+                        <th>Path</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="4" style="text-align: center;">Run algorithm to see results</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="algo-info">
+            <div class="info-card">
+                <div class="info-title">🎯 Dijkstra's Algorithm</div>
+                <div class="info-content">
+                    <strong>Greedy approach</strong> that finds shortest path by exploring nodes in order of increasing distance. Works only with <strong>non-negative weights</strong>. Time: <strong>O((V+E) log V)</strong> with min-heap.
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-title">⚡ Bellman-Ford Algorithm</div>
+                <div class="info-content">
+                    Uses <strong>dynamic programming</strong> to find shortest paths. Can handle <strong>negative weights</strong> and detects negative cycles. Slower but more versatile. Time: <strong>O(VE)</strong>.
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-title">🌐 Real-World Usage</div>
+                <div class="info-content">
+                    Used in <strong>OSPF</strong> (Open Shortest Path First) and <strong>IS-IS</strong> routing protocols. GPS navigation, network packet routing, and social network analysis all use shortest path algorithms.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAlgorithm = 'dijkstra';
+        let isRunning = false;
+
+        const graph = {
+            'A': {'B': 4, 'D': 2},
+            'B': {'A': 4, 'C': 3, 'D': 1, 'E': 4},
+            'C': {'B': 3, 'E': 2},
+            'D': {'A': 2, 'B': 1, 'E': 5, 'F': 6},
+            'E': {'B': 4, 'C': 2, 'D': 5, 'F': 3},
+            'F': {'D': 6, 'E': 3}
+        };
+
+        function selectAlgorithm(algo) {
+            currentAlgorithm = algo;
+            document.querySelectorAll('.algo-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(algo === 'dijkstra' ? 'btnDijkstra' : 'btnBellman').classList.add('active');
+            
+            const algoName = algo === 'dijkstra' ? "Dijkstra's" : "Bellman-Ford";
+            updateStatus('READY', `${algoName} selected. Click "Run" to find shortest path.`);
+        }
+
+        function updateStatus(phase, desc) {
+            document.getElementById('statusPhase').textContent = phase;
+            document.getElementById('statusDesc').textContent = desc;
+        }
+
+        function reset() {
+            document.querySelectorAll('.network-node').forEach(node => {
+                node.classList.remove('visited', 'in-path');
+            });
+            
+            ['A', 'B', 'C', 'D', 'E', 'F'].forEach(node => {
+                document.getElementById(`dist${node}`).textContent = node === 'A' ? '0' : '∞';
+            });
+
+            document.querySelectorAll('.edge-weight').forEach(w => w.remove());
+            drawEdges();
+            
+            document.getElementById('tableBody').innerHTML = '<tr><td colspan="4" style="text-align: center;">Run algorithm to see results</td></tr>';
+            
+            updateStatus('READY', 'Click "Run" to start visualization');
+            isRunning = false;
+        }
+
+        function drawEdges() {
+            const svg = document.getElementById('edgesSvg');
+            svg.innerHTML = '';
+            
+            const vizArea = document.getElementById('vizArea');
+            const vizRect = vizArea.getBoundingClientRect();
+            
+            const getNodeCenter = (nodeName) => {
+                const node = Array.from(document.querySelectorAll('.network-node')).find(n => n.textContent.trim()[0] === nodeName);
+                const rect = node.getBoundingClientRect();
+                return {
+                    x: rect.left + rect.width / 2 - vizRect.left,
+                    y: rect.top + rect.height / 2 - vizRect.top
+                };
+            };
+
+            const drawnEdges = new Set();
+
+            Object.keys(graph).forEach(from => {
+                Object.keys(graph[from]).forEach(to => {
+                    const edgeKey = [from, to].sort().join('-');
+                    if (drawnEdges.has(edgeKey)) return;
+                    drawnEdges.add(edgeKey);
+
+                    const fromPos = getNodeCenter(from);
+                    const toPos = getNodeCenter(to);
+                    
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', fromPos.x);
+                    line.setAttribute('y1', fromPos.y);
+                    line.setAttribute('x2', toPos.x);
+                    line.setAttribute('y2', toPos.y);
+                    line.setAttribute('stroke', 'rgba(100, 255, 218, 0.2)');
+                    line.setAttribute('stroke-width', '3');
+                    svg.appendChild(line);
+
+                    // Add weight label
+                    const weight = graph[from][to];
+                    const midX = (fromPos.x + toPos.x) / 2;
+                    const midY = (fromPos.y + toPos.y) / 2;
+                    
+                    const label = document.createElement('div');
+                    label.className = 'edge-weight';
+                    label.textContent = weight;
+                    label.style.left = midX + 'px';
+                    label.style.top = midY + 'px';
+                    label.style.transform = 'translate(-50%, -50%)';
+                    vizArea.appendChild(label);
+                });
+            });
+        }
+
+        async function dijkstra() {
+            const distances = {'A': 0, 'B': Infinity, 'C': Infinity, 'D': Infinity, 'E': Infinity, 'F': Infinity};
+            const previous = {};
+            const unvisited = new Set(['A', 'B', 'C', 'D', 'E', 'F']);
+            
+            while (unvisited.size > 0) {
+                let current = null;
+                let minDist = Infinity;
+                
+                for (const node of unvisited) {
+                    if (distances[node] < minDist) {
+                        minDist = distances[node];
+                        current = node;
+                    }
+                }
+                
+                if (current === null || distances[current] === Infinity) break;
+                
+                unvisited.delete(current);
+                
+                const nodeElement = Array.from(document.querySelectorAll('.network-node')).find(n => n.textContent.trim()[0] === current);
+                nodeElement.classList.add('visited');
+                document.getElementById(`dist${current}`).textContent = distances[current];
+                
+                updateStatus('COMPUTING', `Visiting node ${current}, distance: ${distances[current]}`);
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                if (graph[current]) {
+                    for (const neighbor in graph[current]) {
+                        if (unvisited.has(neighbor)) {
+                            const newDist = distances[current] + graph[current][neighbor];
+                            
+                            if (newDist < distances[neighbor]) {
+                                distances[neighbor] = newDist;
+                                previous[neighbor] = current;
+                                document.getElementById(`dist${neighbor}`).textContent = newDist;
+                            }
+                        }
+                    }
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            return {distances, previous};
+        }
+
+        async function bellmanFord() {
+            const distances = {'A': 0, 'B': Infinity, 'C': Infinity, 'D': Infinity, 'E': Infinity, 'F': Infinity};
+            const previous = {};
+            const nodes = ['A', 'B', 'C', 'D', 'E', 'F'];
+            
+            for (let i = 0; i < nodes.length - 1; i++) {
+                let updated = false;
+                
+                for (const from of nodes) {
+                    if (distances[from] === Infinity) continue;
+                    
+                    if (graph[from]) {
+                        for (const to in graph[from]) {
+                            const newDist = distances[from] + graph[from][to];
+                            
+                            if (newDist < distances[to]) {
+                                distances[to] = newDist;
+                                previous[to] = from;
+                                document.getElementById(`dist${to}`).textContent = newDist;
+                                updated = true;
+                                
+                                const nodeElement = Array.from(document.querySelectorAll('.network-node')).find(n => n.textContent.trim()[0] === to);
+                                nodeElement.classList.add('visited');
+                            }
+                        }
+                    }
+                }
+                
+                updateStatus('COMPUTING', `Iteration ${i + 1}: Relaxing edges...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                if (!updated) break;
+            }
+            
+            return {distances, previous};
+        }
+
+        function reconstructPath(previous, target) {
+            const path = [];
+            let current = target;
+            
+            while (current) {
+                path.unshift(current);
+                current = previous[current];
+            }
+            
+            return path;
+        }
+
+        async function runAlgorithm() {
+            if (isRunning) return;
+            isRunning = true;
+            
+            reset();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            document.getElementById('runBtn').disabled = true;
+            
+            let result;
+            if (currentAlgorithm === 'dijkstra') {
+                updateStatus('RUNNING', "Dijkstra's Algorithm - Finding shortest paths...");
+                result = await dijkstra();
+            } else {
+                updateStatus('RUNNING', 'Bellman-Ford Algorithm - Relaxing edges...');
+                result = await bellmanFord();
+            }
+            
+            const {distances, previous} = result;
+            const path = reconstructPath(previous, 'F');
+            
+            // Highlight shortest path
+            for (const node of path) {
+                const nodeElement = Array.from(document.querySelectorAll('.network-node')).find(n => n.textContent.trim()[0] === node);
+                nodeElement.classList.add('in-path');
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            
+            updateStatus('COMPLETED ✓', `Shortest path: ${path.join(' → ')} (Total: ${distances['F']})`);
+            
+            // Update routing table
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            
+            for (const node of ['B', 'C', 'D', 'E', 'F']) {
+                const nodePath = reconstructPath(previous, node);
+                const nextHop = nodePath.length > 1 ? nodePath[1] : '-';
+                
+                const row = tableBody.insertRow();
+                row.insertCell(0).textContent = node;
+                row.insertCell(1).textContent = distances[node] === Infinity ? '∞' : distances[node];
+                row.insertCell(2).textContent = nextHop;
+                row.insertCell(3).textContent = nodePath.join(' → ');
+            }
+            
+            document.getElementById('runBtn').disabled = false;
+            isRunning = false;
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            drawEdges();
+        });
+
+        window.addEventListener('resize', () => {
+            drawEdges();
+        });
+    </script>
+</body>
+</html>

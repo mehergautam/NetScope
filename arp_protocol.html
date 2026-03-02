@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARP Protocol - Interactive Visualization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #4a90e2;
+            --dark-blue: #2c3e50;
+            --bg-dark: #1a1d29;
+            --bg-card: #252936;
+            --text-primary: #ffffff;
+            --text-secondary: #a8b2d1;
+            --accent-cyan: #64ffda;
+            --accent-green: #80cbc4;
+            --accent-orange: #ffab91;
+            --accent-purple: #c792ea;
+            --accent-yellow: #ffd93d;
+            --border-light: rgba(100, 255, 218, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1d29 0%, #2c3e50 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(100, 255, 218, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 255, 218, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(100, 255, 218, 0.1);
+            border: 2px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-bottom: 2rem;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+            transform: translateX(-5px);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 1rem 2rem;
+            background: rgba(74, 144, 226, 0.15);
+            border: 2px solid var(--primary-blue);
+            color: var(--primary-blue);
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--primary-blue);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .status-box {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(100, 255, 218, 0.05);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .status-phase {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            font-family: 'Fira Code', monospace;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-desc {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .viz-area {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 2rem;
+            min-height: 600px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            margin-bottom: 2rem;
+        }
+
+        /* Network Devices */
+        .device {
+            position: absolute;
+            width: 130px;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(100, 255, 218, 0.1));
+            border: 2px solid var(--primary-blue);
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(74, 144, 226, 0.2);
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        .device.sender {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 30px rgba(128, 203, 196, 0.4);
+        }
+
+        .device.target {
+            border-color: var(--accent-orange);
+        }
+
+        .device.active {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 40px rgba(100, 255, 218, 0.6);
+            transform: scale(1.05);
+        }
+
+        .device-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .device-label {
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .device-ip {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-family: 'Fira Code', monospace;
+            margin: 0.25rem 0;
+        }
+
+        .device-mac {
+            font-size: 0.7rem;
+            color: var(--accent-purple);
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Device Positions */
+        #deviceA { top: 20%; left: 15%; }
+        #deviceB { top: 20%; right: 15%; }
+        #deviceC { bottom: 20%; left: 15%; }
+        #deviceD { bottom: 20%; right: 15%; }
+
+        /* Switch */
+        .switch {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 140px;
+            height: 140px;
+            background: linear-gradient(135deg, rgba(199, 146, 234, 0.2), rgba(100, 255, 218, 0.2));
+            border: 3px solid var(--accent-purple);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 15px 40px rgba(199, 146, 234, 0.3);
+            z-index: 5;
+        }
+
+        .switch-icon {
+            font-size: 3rem;
+        }
+
+        .switch-label {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--accent-purple);
+            margin-top: 0.5rem;
+        }
+
+        /* Broadcast Wave */
+        .broadcast-wave {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            border: 3px solid var(--accent-yellow);
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .broadcast-wave.active {
+            animation: waveExpand 2s ease-out;
+        }
+
+        @keyframes waveExpand {
+            0% {
+                width: 100px;
+                height: 100px;
+                opacity: 1;
+            }
+            100% {
+                width: 800px;
+                height: 800px;
+                opacity: 0;
+            }
+        }
+
+        /* ARP Packet */
+        .arp-packet {
+            position: absolute;
+            width: 190px;
+            background: var(--bg-dark);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 8px;
+            font-family: 'Fira Code', monospace;
+            box-shadow: 0 8px 30px rgba(100, 255, 218, 0.5);
+            z-index: 100;
+            opacity: 0;
+        }
+
+        .packet-header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-cyan));
+            padding: 0.5rem;
+            font-weight: 700;
+            font-size: 0.7rem;
+            text-align: center;
+            color: white;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .packet-body {
+            padding: 0.6rem;
+            font-size: 0.65rem;
+        }
+
+        .packet-field {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.2rem 0;
+            padding: 0.2rem;
+            background: rgba(100, 255, 218, 0.05);
+            border-radius: 3px;
+        }
+
+        .field-label {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .field-value {
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+        }
+
+        .packet-footer {
+            background: rgba(255, 211, 61, 0.1);
+            border-top: 1px dashed var(--accent-yellow);
+            padding: 0.5rem;
+            color: var(--accent-yellow);
+            font-size: 0.7rem;
+            border-radius: 0 0 6px 6px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .packet-footer.reply {
+            background: rgba(128, 203, 196, 0.1);
+            border-top-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        /* ARP Table */
+        .arp-table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .arp-table-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .arp-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+        }
+
+        .arp-table th {
+            background: rgba(100, 255, 218, 0.1);
+            color: var(--accent-cyan);
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 700;
+            border-bottom: 2px solid var(--accent-cyan);
+        }
+
+        .arp-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-secondary);
+        }
+
+        .arp-table tr:hover {
+            background: rgba(100, 255, 218, 0.05);
+        }
+
+        .arp-entry.new {
+            animation: highlightNew 1s ease-out;
+        }
+
+        @keyframes highlightNew {
+            0%, 100% { background: rgba(100, 255, 218, 0.05); }
+            50% { background: rgba(100, 255, 218, 0.2); }
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Info Panel */
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 10px 30px rgba(100, 255, 218, 0.15);
+        }
+
+        .info-title {
+            color: var(--accent-cyan);
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .info-content {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .device { width: 100px; padding: 0.8rem; font-size: 0.8rem; }
+            .switch { width: 100px; height: 100px; }
+            .arp-packet { width: 160px; }
+            #deviceA { top: 10%; left: 10%; }
+            #deviceB { top: 10%; right: 10%; }
+            #deviceC { bottom: 10%; left: 10%; }
+            #deviceD { bottom: 10%; right: 10%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <div class="container">
+        <a href="index.html" class="back-btn">← Back to Topics</a>
+        
+        <header>
+            <h1>ARP Protocol</h1>
+            <p class="subtitle">Address Resolution Protocol - IP to MAC Address Mapping</p>
+        </header>
+
+        <div class="controls">
+            <button onclick="sendARPRequest()" id="arpBtn">📡 Send ARP Request</button>
+            <button onclick="reset()">🔄 Reset</button>
+        </div>
+
+        <div class="status-box">
+            <div class="status-phase" id="statusPhase">READY</div>
+            <div class="status-desc" id="statusDesc">Click "Send ARP Request" to resolve IP address to MAC address</div>
+        </div>
+
+        <div class="viz-area" id="vizArea">
+            <canvas id="arpCanvas"></canvas>
+
+            <div class="broadcast-wave" id="broadcastWave"></div>
+
+            <div class="switch">
+                <div class="switch-icon">🔀</div>
+                <div class="switch-label">SWITCH</div>
+            </div>
+
+            <div class="device sender" id="deviceA">
+                <div class="device-icon">💻</div>
+                <div class="device-label">Device A</div>
+                <div class="device-ip">192.168.1.10</div>
+                <div class="device-mac">AA:BB:CC:11:22:33</div>
+            </div>
+
+            <div class="device target" id="deviceB">
+                <div class="device-icon">🖥️</div>
+                <div class="device-label">Device B</div>
+                <div class="device-ip">192.168.1.20</div>
+                <div class="device-mac">DD:EE:FF:44:55:66</div>
+            </div>
+
+            <div class="device" id="deviceC">
+                <div class="device-icon">💻</div>
+                <div class="device-label">Device C</div>
+                <div class="device-ip">192.168.1.30</div>
+                <div class="device-mac">11:22:33:AA:BB:CC</div>
+            </div>
+
+            <div class="device" id="deviceD">
+                <div class="device-icon">🖨️</div>
+                <div class="device-label">Device D</div>
+                <div class="device-ip">192.168.1.40</div>
+                <div class="device-mac">77:88:99:DD:EE:FF</div>
+            </div>
+        </div>
+
+        <div class="arp-table-container">
+            <div class="arp-table-title">📋 ARP Cache Table (Device A)</div>
+            <table class="arp-table">
+                <thead>
+                    <tr>
+                        <th>IP Address</th>
+                        <th>MAC Address</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody id="arpTableBody">
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: var(--text-secondary);">
+                            ARP cache is empty. Send ARP request to populate.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="info-panel">
+            <div class="info-card">
+                <div class="info-title">🔍 What is ARP?</div>
+                <div class="info-content">
+                    ARP (Address Resolution Protocol) maps <strong>IP addresses</strong> (Layer 3) to <strong>MAC addresses</strong> (Layer 2) in local networks. Devices need MAC addresses to communicate at the data link layer.
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-title">📡 ARP Request (Broadcast)</div>
+                <div class="info-content">
+                    When Device A wants to communicate with Device B's IP, it broadcasts an ARP request: <strong>"Who has 192.168.1.20? Tell 192.168.1.10"</strong>. All devices receive it.
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-title">✅ ARP Reply (Unicast)</div>
+                <div class="info-content">
+                    Only Device B responds with a <strong>unicast</strong> ARP reply: <strong>"192.168.1.20 is at DD:EE:FF:44:55:66"</strong>. Device A updates its ARP cache.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('arpCanvas');
+        const ctx = canvas.getContext('2d');
+        const vizArea = document.getElementById('vizArea');
+        let isProcessing = false;
+
+        function resizeCanvas() {
+            canvas.width = vizArea.offsetWidth;
+            canvas.height = vizArea.offsetHeight;
+            drawConnections();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function getDeviceCenter(id) {
+            const device = document.getElementById(id);
+            const rect = device.getBoundingClientRect();
+            const vizRect = vizArea.getBoundingClientRect();
+            return {
+                x: rect.left + rect.width / 2 - vizRect.left,
+                y: rect.top + rect.height / 2 - vizRect.top
+            };
+        }
+
+        function drawConnections() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'rgba(100, 255, 218, 0.15)';
+            ctx.lineWidth = 2;
+
+            const switchPos = {
+                x: canvas.width / 2,
+                y: canvas.height / 2
+            };
+
+            ['deviceA', 'deviceB', 'deviceC', 'deviceD'].forEach(id => {
+                const pos = getDeviceCenter(id);
+                ctx.beginPath();
+                ctx.moveTo(switchPos.x, switchPos.y);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            });
+        }
+
+        function updateStatus(phase, desc) {
+            document.getElementById('statusPhase').textContent = phase;
+            document.getElementById('statusDesc').textContent = desc;
+        }
+
+        function createARPRequest() {
+            const packet = document.createElement('div');
+            packet.className = 'arp-packet';
+            
+            packet.innerHTML = `
+                <div class="packet-header">ARP REQUEST</div>
+                <div class="packet-body">
+                    <div class="packet-field">
+                        <span class="field-label">OP:</span>
+                        <span class="field-value">REQUEST (1)</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">SRC_IP:</span>
+                        <span class="field-value">192.168.1.10</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">SRC_MAC:</span>
+                        <span class="field-value">AA:BB:CC:11:22:33</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">TGT_IP:</span>
+                        <span class="field-value">192.168.1.20</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">TGT_MAC:</span>
+                        <span class="field-value">00:00:00:00:00:00</span>
+                    </div>
+                </div>
+                <div class="packet-footer">BROADCAST: Who has 192.168.1.20?</div>
+            `;
+            
+            vizArea.appendChild(packet);
+            return packet;
+        }
+
+        function createARPReply() {
+            const packet = document.createElement('div');
+            packet.className = 'arp-packet';
+            
+            packet.innerHTML = `
+                <div class="packet-header">ARP REPLY</div>
+                <div class="packet-body">
+                    <div class="packet-field">
+                        <span class="field-label">OP:</span>
+                        <span class="field-value">REPLY (2)</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">SRC_IP:</span>
+                        <span class="field-value">192.168.1.20</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">SRC_MAC:</span>
+                        <span class="field-value">DD:EE:FF:44:55:66</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">TGT_IP:</span>
+                        <span class="field-value">192.168.1.10</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">TGT_MAC:</span>
+                        <span class="field-value">AA:BB:CC:11:22:33</span>
+                    </div>
+                </div>
+                <div class="packet-footer reply">UNICAST: 192.168.1.20 is at DD:EE:FF:44:55:66</div>
+            `;
+            
+            vizArea.appendChild(packet);
+            return packet;
+        }
+
+        async function animatePacket(packet, fromId, toId) {
+            const from = document.getElementById(fromId);
+            const to = document.getElementById(toId);
+            
+            const fromRect = from.getBoundingClientRect();
+            const toRect = to.getBoundingClientRect();
+            const vizRect = vizArea.getBoundingClientRect();
+            
+            const startX = fromRect.left + fromRect.width / 2 - vizRect.left - packet.offsetWidth / 2;
+            const startY = fromRect.top + fromRect.height / 2 - vizRect.top - packet.offsetHeight / 2;
+            const endX = toRect.left + toRect.width / 2 - vizRect.left - packet.offsetWidth / 2;
+            const endY = toRect.top + toRect.height / 2 - vizRect.top - packet.offsetHeight / 2;
+            
+            packet.style.left = startX + 'px';
+            packet.style.top = startY + 'px';
+            packet.style.opacity = '0';
+            
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            packet.style.transition = 'all 0.8s ease-in-out';
+            packet.style.opacity = '1';
+            packet.style.left = endX + 'px';
+            packet.style.top = endY + 'px';
+            
+            await new Promise(resolve => setTimeout(resolve, 800));
+            await new Promise(resolve => setTimeout(resolve, 400));
+            
+            packet.style.opacity = '0';
+            await new Promise(resolve => setTimeout(resolve, 300));
+            packet.remove();
+        }
+
+        function updateARPTable() {
+            const tbody = document.getElementById('arpTableBody');
+            tbody.innerHTML = `
+                <tr class="arp-entry new">
+                    <td>192.168.1.20</td>
+                    <td>DD:EE:FF:44:55:66</td>
+                    <td style="color: var(--accent-green);">Dynamic</td>
+                </tr>
+            `;
+        }
+
+        async function sendARPRequest() {
+            if (isProcessing) return;
+            isProcessing = true;
+            document.getElementById('arpBtn').disabled = true;
+            
+            document.querySelectorAll('.device').forEach(d => d.classList.remove('active'));
+            
+            updateStatus('BROADCASTING', 'Device A broadcasts ARP request to all devices...');
+            
+            // Sender active
+            document.getElementById('deviceA').classList.add('active');
+            
+            // Create and show broadcast wave
+            const wave = document.getElementById('broadcastWave');
+            wave.classList.add('active');
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Broadcast to all devices
+            const devices = ['deviceB', 'deviceC', 'deviceD'];
+            const broadcastPackets = [];
+            
+            for (const deviceId of devices) {
+                const packet = createARPRequest();
+                broadcastPackets.push(animatePacket(packet, 'deviceA', deviceId));
+            }
+            
+            await Promise.all(broadcastPackets);
+            wave.classList.remove('active');
+            
+            // All devices receive
+            devices.forEach(id => {
+                document.getElementById(id).classList.add('active');
+            });
+            
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            updateStatus('REPLYING', 'Device B (192.168.1.20) sends unicast ARP reply...');
+            
+            // Only target replies
+            document.querySelectorAll('.device').forEach(d => {
+                if (d.id !== 'deviceB') d.classList.remove('active');
+            });
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Reply packet
+            const replyPacket = createARPReply();
+            await animatePacket(replyPacket, 'deviceB', 'deviceA');
+            
+            // Update ARP table
+            updateARPTable();
+            
+            updateStatus('RESOLVED ✓', 'ARP cache updated! 192.168.1.20 → DD:EE:FF:44:55:66');
+            
+            document.querySelectorAll('.device').forEach(d => d.classList.remove('active'));
+            document.getElementById('arpBtn').disabled = false;
+            isProcessing = false;
+        }
+
+        function reset() {
+            document.querySelectorAll('.arp-packet').forEach(p => p.remove());
+            document.querySelectorAll('.device').forEach(d => d.classList.remove('active'));
+            document.getElementById('broadcastWave').classList.remove('active');
+            document.getElementById('arpTableBody').innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; color: var(--text-secondary);">
+                        ARP cache is empty. Send ARP request to populate.
+                    </td>
+                </tr>
+            `;
+            updateStatus('READY', 'Click "Send ARP Request" to resolve IP address to MAC address');
+            isProcessing = false;
+            document.getElementById('arpBtn').disabled = false;
+        }
+
+        // Initialize
+        drawConnections();
+    </script>
+</body>
+</html>

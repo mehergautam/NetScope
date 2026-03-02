@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NetScope — Network Visualization Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&family=Orbitron:wght@600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0:#080c10;--bg1:#0d1117;--bg2:#111920;--bg3:#162030;
+  --border:#1e3045;--border2:#243a55;
+  --accent:#0cf;--green:#0f9;--amber:#f90;--red:#f34;--purple:#a78bfa;--pink:#ec4899;
+  --text:#c9d8e8;--text2:#7090a8;--text3:#3d5870;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;--title:'Orbitron',sans-serif;
+  --sidebar:220px;--topbar:48px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg0);color:var(--text);font-family:var(--sans);font-size:13px;display:flex;flex-direction:column;}
+
+/* TOPBAR */
+.topbar{height:var(--topbar);background:var(--bg1);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:16px;flex-shrink:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:10px;width:var(--sidebar);flex-shrink:0;}
+.logo-mark{width:28px;height:28px;}
+.logo-mark svg{width:100%;height:100%;}
+.logo-text{font-family:var(--title);font-size:14px;font-weight:700;letter-spacing:.1em;color:#fff;}
+.logo-text span{color:var(--accent);}
+.topbar-breadcrumb{font-family:var(--mono);font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;}
+.topbar-breadcrumb .sep{color:var(--border2);}
+.topbar-breadcrumb .crumb-active{color:var(--text2);}
+.topbar-spacer{flex:1;}
+.topbar-status{display:flex;align-items:center;gap:12px;}
+.status-pill{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;padding:4px 10px;border-radius:3px;background:rgba(0,255,153,.06);border:1px solid rgba(0,255,153,.15);color:var(--green);}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pdot 2s ease-in-out infinite;}
+@keyframes pdot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.6;transform:scale(.8);}}
+.topbar-time{font-family:var(--mono);font-size:11px;color:var(--text3);}
+.topbar-btn{width:28px;height:28px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:all .15s;font-size:12px;}
+.topbar-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* LAYOUT */
+.app-body{flex:1;display:flex;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.sidebar::-webkit-scrollbar{width:3px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border2);}
+.sidebar-section{padding:12px 0;border-bottom:1px solid var(--border);}
+.sidebar-label{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--text3);text-transform:uppercase;padding:0 14px 8px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;color:var(--text2);font-size:12.5px;transition:all .15s;border-left:2px solid transparent;}
+.nav-item:hover{background:var(--bg2);color:var(--text);border-left-color:var(--border2);}
+.nav-item.active{background:rgba(0,204,255,.06);color:var(--accent);border-left-color:var(--accent);}
+.nav-icon{width:16px;height:16px;opacity:.7;flex-shrink:0;}
+.nav-item.active .nav-icon{opacity:1;}
+.nav-badge{margin-left:auto;font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:10px;background:var(--bg3);color:var(--text3);}
+.nav-badge.warn{background:rgba(255,153,0,.12);color:var(--amber);}
+.nav-badge.alert{background:rgba(255,51,68,.12);color:var(--red);}
+.node-tree{padding:4px 0;}
+.tree-item{display:flex;align-items:center;gap:8px;padding:5px 14px 5px 24px;cursor:pointer;color:var(--text2);font-size:11.5px;font-family:var(--mono);transition:all .15s;}
+.tree-item:hover{background:var(--bg2);color:var(--text);}
+.tree-item.selected{color:var(--accent);}
+.tree-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg0);}
+
+/* TABS */
+.tabs-bar{height:36px;background:var(--bg1);border-bottom:1px solid var(--border);display:flex;align-items:flex-end;padding:0 16px;gap:2px;flex-shrink:0;}
+.tab{font-family:var(--mono);font-size:11px;padding:6px 16px;border-radius:4px 4px 0 0;cursor:pointer;color:var(--text3);background:transparent;border:1px solid transparent;border-bottom:none;transition:all .15s;user-select:none;}
+.tab:hover{color:var(--text2);}
+.tab.active{color:var(--text);background:var(--bg0);border-color:var(--border);border-bottom-color:var(--bg0);}
+.tab-content{display:none;flex:1;overflow:hidden;}
+.tab-content.active{display:flex;flex-direction:column;flex:1;overflow:hidden;animation:fadeSlide .2s ease;}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ━━━ TOPOLOGY TAB ━━━ */
+.canvas-wrap{flex:1;position:relative;overflow:hidden;background:radial-gradient(ellipse at 30% 40%,rgba(0,120,200,.04) 0%,transparent 60%),radial-gradient(ellipse at 70% 60%,rgba(0,255,153,.03) 0%,transparent 50%),var(--bg0);}
+.canvas-wrap::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(30,48,69,.8) 1px,transparent 1px);background-size:24px 24px;pointer-events:none;}
+
+/* TOPOLOGY SWITCHER */
+.topo-switcher{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:3px;background:rgba(8,12,16,.9);border:1px solid var(--border);border-radius:6px;padding:4px;backdrop-filter:blur(10px);}
+.topo-btn{font-family:var(--mono);font-size:10px;padding:5px 12px;border-radius:4px;cursor:pointer;color:var(--text3);background:transparent;border:none;transition:all .2s;letter-spacing:.05em;white-space:nowrap;}
+.topo-btn:hover{color:var(--text);background:var(--bg3);}
+.topo-btn.active{color:var(--accent);background:rgba(0,204,255,.1);border:1px solid rgba(0,204,255,.2);}
+
+.canvas-toolbar{position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:4px;z-index:10;}
+.canvas-btn{width:30px;height:30px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);font-size:13px;transition:all .15s;}
+.canvas-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,204,255,.06);}
+.canvas-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,204,255,.1);}
+
+#networkSvg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
+.net-node{cursor:pointer;}
+.node-body{transition:filter .2s;}
+.net-node.selected .node-body{filter:drop-shadow(0 0 8px var(--accent)) brightness(1.3);}
+.node-label{font-family:var(--mono);font-size:10px;fill:var(--text2);pointer-events:none;user-select:none;}
+.node-sublabel{font-family:var(--mono);font-size:9px;fill:var(--text3);pointer-events:none;user-select:none;}
+.net-edge{stroke:var(--border2);stroke-width:1.5;fill:none;transition:stroke .3s;}
+.net-edge.active{stroke:rgba(0,204,255,.4);}
+.net-edge.highlight{stroke:var(--accent);stroke-width:2.5;}
+.packet-dot{pointer-events:none;}
+
+.canvas-legend{position:absolute;bottom:12px;left:12px;background:rgba(13,17,23,.9);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:var(--mono);font-size:10px;color:var(--text3);backdrop-filter:blur(10px);z-index:10;}
+.legend-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.legend-row:last-child{margin-bottom:0;}
+.canvas-stats{position:absolute;top:60px;right:12px;z-index:10;display:flex;flex-direction:column;gap:4px;}
+.stat-chip{background:rgba(13,17,23,.92);border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-family:var(--mono);font-size:10px;color:var(--text3);backdrop-filter:blur(8px);white-space:nowrap;}
+.stat-chip .val{color:var(--accent);font-size:11px;}
+.stat-chip .val.green{color:var(--green);}
+.stat-chip .val.amber{color:var(--amber);}
+
+/* TOPO INFO OVERLAY */
+.topo-info-overlay{position:absolute;bottom:12px;right:12px;background:rgba(13,17,23,.92);border:1px solid var(--border);border-radius:6px;padding:12px 14px;font-family:var(--mono);font-size:10px;color:var(--text3);max-width:220px;backdrop-filter:blur(10px);z-index:10;line-height:1.7;}
+.topo-info-overlay .topo-name{color:var(--accent);font-size:11px;font-weight:500;margin-bottom:6px;}
+.topo-info-overlay .topo-pros{color:var(--green);margin-top:4px;}
+.topo-info-overlay .topo-cons{color:var(--red);margin-top:2px;}
+
+/* RIGHT PANEL */
+.right-panel{width:280px;background:var(--bg1);border-left:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;overflow-y:auto;}
+.right-panel::-webkit-scrollbar{width:3px;}
+.right-panel::-webkit-scrollbar-thumb{background:var(--border2);}
+.panel-block{border-bottom:1px solid var(--border);padding:14px;}
+.panel-block-title{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--text3);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.panel-block-title .action{font-size:9px;color:var(--accent);cursor:pointer;letter-spacing:.05em;opacity:.8;}
+.panel-block-title .action:hover{opacity:1;}
+.node-detail-icon{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:10px;border:1px solid var(--border);background:var(--bg2);}
+.node-detail-name{font-weight:600;font-size:13px;color:#fff;margin-bottom:2px;}
+.node-detail-type{font-family:var(--mono);font-size:10px;color:var(--text3);}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.detail-cell{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:8px;}
+.detail-cell-label{font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:3px;}
+.detail-cell-val{font-family:var(--mono);font-size:11px;color:var(--text);}
+.detail-cell-val.accent{color:var(--accent);}.detail-cell-val.green{color:var(--green);}.detail-cell-val.amber{color:var(--amber);}.detail-cell-val.red{color:var(--red);}
+.sparkline-wrap{margin-top:8px;height:40px;position:relative;}
+.sparkline-label{font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px;}
+canvas.sparkline{width:100%;height:32px;border-radius:3px;}
+.iface-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03);font-family:var(--mono);font-size:10.5px;}
+.iface-row:last-child{border-bottom:none;}
+.iface-name{color:var(--text2);flex:1;}
+.iface-ip{color:var(--text3);font-size:10px;}
+.log-wrap{max-height:180px;overflow-y:auto;}
+.log-wrap::-webkit-scrollbar{width:2px;}
+.log-wrap::-webkit-scrollbar-thumb{background:var(--border2);}
+.log-entry{display:flex;gap:8px;padding:4px 0;font-family:var(--mono);font-size:10px;border-bottom:1px solid rgba(255,255,255,.02);line-height:1.5;}
+.log-time{color:var(--text3);flex-shrink:0;}
+.log-type{flex-shrink:0;width:44px;}
+.log-type.info{color:var(--accent);}
+.log-type.warn{color:var(--amber);}
+.log-type.ok{color:var(--green);}
+.log-type.err{color:var(--red);}
+.log-msg{color:var(--text2);}
+@keyframes logFlash{from{background:rgba(0,204,255,.08);}to{background:transparent;}}
+.log-entry.new{animation:logFlash .8s ease;}
+
+/* ━━━ TOPICS TAB ━━━ */
+.topics-layout{flex:1;display:flex;overflow:hidden;}
+.topics-grid-wrap{flex:1;overflow-y:auto;padding:0;}
+.topics-grid-wrap::-webkit-scrollbar{width:4px;}
+.topics-grid-wrap::-webkit-scrollbar-thumb{background:var(--border2);}
+.topics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:var(--border);}
+.topic-tile{background:var(--bg1);padding:20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.topic-tile::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--tlc,var(--accent)),transparent);opacity:0;transition:opacity .2s;}
+.topic-tile:hover{background:var(--bg2);}
+.topic-tile:hover::after,.topic-tile.selected::after{opacity:1;}
+.topic-tile.selected{background:var(--bg2);outline:1px solid rgba(0,204,255,.2);}
+.tile-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;}
+.tile-icon-box{width:36px;height:36px;border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--bg3);}
+.tile-num{font-family:var(--mono);font-size:10px;color:var(--text3);padding:2px 7px;background:var(--bg3);border-radius:2px;}
+.tile-title{font-weight:600;font-size:13px;color:#fff;margin-bottom:6px;}
+.tile-desc{font-size:11.5px;color:var(--text2);line-height:1.6;margin-bottom:14px;}
+.tile-tags{display:flex;flex-wrap:wrap;gap:5px;}
+.tile-tag{font-family:var(--mono);font-size:9.5px;padding:2px 7px;border-radius:2px;background:var(--bg3);border:1px solid var(--border);color:var(--text3);}
+.tile-prog-bar{margin-top:14px;height:2px;background:var(--border);border-radius:1px;overflow:hidden;}
+.tile-prog-fill{height:100%;border-radius:1px;background:var(--tlc,var(--accent));opacity:.7;}
+
+/* TOPIC DETAIL PANEL */
+.topic-detail-panel{width:480px;background:var(--bg1);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;}
+.topic-detail-panel.hidden{display:none;}
+.tdp-header{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.tdp-title{font-weight:600;font-size:14px;color:#fff;}
+.tdp-close{width:24px;height:24px;background:var(--bg2);border:1px solid var(--border);border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:12px;transition:all .15s;}
+.tdp-close:hover{border-color:var(--red);color:var(--red);}
+.tdp-body{flex:1;overflow-y:auto;padding:16px;}
+.tdp-body::-webkit-scrollbar{width:3px;}
+.tdp-body::-webkit-scrollbar-thumb{background:var(--border2);}
+.tdp-section{margin-bottom:20px;}
+.tdp-section-title{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--text3);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.tdp-section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* SVG diagram in detail panel */
+.detail-svg-wrap{background:var(--bg0);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+.detail-svg-wrap svg{width:100%;display:block;}
+
+/* Mini info cards */
+.info-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.info-card{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:10px;}
+.ic-label{font-family:var(--mono);font-size:9px;color:var(--text3);margin-bottom:4px;}
+.ic-val{font-family:var(--mono);font-size:13px;color:var(--text);}
+.ic-val.accent{color:var(--accent);}
+.ic-val.green{color:var(--green);}
+.ic-val.amber{color:var(--amber);}
+.ic-val.red{color:var(--red);}
+
+/* Pros/Cons */
+.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.pc-block{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:10px;}
+.pc-title{font-family:var(--mono);font-size:9px;letter-spacing:.1em;margin-bottom:8px;}
+.pc-title.p{color:var(--green);}
+.pc-title.c{color:var(--red);}
+.pc-item{font-size:11px;color:var(--text2);padding:3px 0;display:flex;gap:6px;align-items:flex-start;line-height:1.4;}
+.pc-item::before{content:'•';flex-shrink:0;margin-top:1px;}
+.pc-block:first-child .pc-item::before{color:var(--green);}
+.pc-block:last-child .pc-item::before{color:var(--red);}
+
+/* Handshake animation area */
+.anim-canvas{background:var(--bg0);border:1px solid var(--border);border-radius:4px;position:relative;overflow:hidden;}
+
+/* Step flow */
+.step-flow{display:flex;flex-direction:column;gap:6px;}
+.step-item{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:all .15s;}
+.step-item:hover{border-color:var(--border2);}
+.step-item.active{border-color:var(--accent);background:rgba(0,204,255,.05);}
+.step-num{width:20px;height:20px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;color:var(--text3);flex-shrink:0;}
+.step-item.active .step-num{background:var(--accent);border-color:var(--accent);color:var(--bg0);}
+.step-text{font-size:11.5px;color:var(--text2);line-height:1.5;}
+.step-item.active .step-text{color:var(--text);}
+
+/* ━━━ OSI TAB ━━━ */
+.osi-wrap{flex:1;overflow-y:auto;padding:20px;display:flex;gap:16px;}
+.osi-wrap::-webkit-scrollbar{width:4px;}
+.osi-wrap::-webkit-scrollbar-thumb{background:var(--border2);}
+.osi-stack{flex:1;display:flex;flex-direction:column;gap:4px;max-width:680px;}
+.osi-layer-card{background:var(--bg1);border:1px solid var(--border);border-left:3px solid var(--lc,var(--border));padding:14px 18px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.osi-layer-card:hover,.osi-layer-card.expanded{background:var(--bg2);border-color:var(--lc,var(--border));}
+.osi-layer-card.expanded::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,color-mix(in srgb,var(--lc,transparent) 4%,transparent),transparent 40%);pointer-events:none;}
+.layer-header{display:grid;grid-template-columns:36px 140px 1fr auto;align-items:center;gap:14px;}
+.layer-num{font-family:var(--title);font-size:20px;font-weight:700;color:var(--lc,var(--text3));opacity:.5;transition:opacity .2s;text-align:center;}
+.osi-layer-card:hover .layer-num,.osi-layer-card.expanded .layer-num{opacity:1;}
+.layer-name{font-weight:600;font-size:13px;color:#fff;}
+.layer-pdu{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px;}
+.layer-desc-short{font-size:11.5px;color:var(--text2);line-height:1.5;}
+.layer-protos{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
+.proto-chip{font-family:var(--mono);font-size:9.5px;padding:2px 7px;border-radius:2px;background:var(--bg3);border:1px solid var(--border);color:var(--text3);transition:all .15s;}
+.osi-layer-card:hover .proto-chip,.osi-layer-card.expanded .proto-chip{border-color:color-mix(in srgb,var(--lc,transparent) 30%,var(--border));color:var(--lc,var(--text2));}
+.layer-expanded-content{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);line-height:1.7;}
+.osi-layer-card.expanded .layer-expanded-content{display:block;}
+.layer-expanded-content table{width:100%;margin-top:10px;border-collapse:collapse;font-family:var(--mono);font-size:10.5px;}
+.layer-expanded-content td{padding:5px 8px;border:1px solid var(--border);color:var(--text2);}
+.layer-expanded-content td:first-child{color:var(--text3);width:100px;}
+.osi-info-panel{width:280px;flex-shrink:0;position:sticky;top:0;}
+.osi-encap{background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:16px;}
+.encap-title{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--text3);text-transform:uppercase;margin-bottom:14px;}
+.encap-stack{display:flex;flex-direction:column;gap:3px;}
+.encap-item{padding:6px 10px;border-radius:3px;font-family:var(--mono);font-size:10.5px;display:flex;align-items:center;justify-content:space-between;border-left:3px solid var(--lc,var(--border));}
+.encap-item .name{color:#fff;}
+.encap-item .pdu{color:var(--text3);font-size:9.5px;}
+
+/* PROTOCOLS TAB */
+.protocols-wrap{flex:1;overflow-y:auto;padding:20px;}
+.protocols-wrap::-webkit-scrollbar{width:4px;}
+.protocols-wrap::-webkit-scrollbar-thumb{background:var(--border2);}
+.proto-table{width:100%;border-collapse:collapse;font-size:12px;}
+.proto-table thead tr{border-bottom:2px solid var(--border2);}
+.proto-table th{font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;color:var(--text3);text-transform:uppercase;padding:8px 12px;text-align:left;white-space:nowrap;}
+.proto-table tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.proto-table tbody tr:hover{background:var(--bg2);}
+.proto-table td{padding:9px 12px;font-family:var(--mono);font-size:11px;vertical-align:middle;}
+.proto-name{color:var(--accent);}
+.proto-port{color:var(--amber);}
+.proto-layer-tag{font-size:9.5px;padding:2px 7px;border-radius:2px;background:var(--bg3);color:var(--text3);border:1px solid var(--border);display:inline-block;}
+.proto-desc{color:var(--text2);font-size:11px;}
+
+/* STATUSBAR */
+.statusbar{height:22px;background:var(--bg1);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:20px;font-family:var(--mono);font-size:10px;color:var(--text3);flex-shrink:0;}
+.sb-item{display:flex;align-items:center;gap:5px;}
+.sb-item .dot{width:5px;height:5px;border-radius:50%;}
+.sb-spacer{flex:1;}
+
+/* CTX MENU */
+.ctx-menu{position:fixed;background:var(--bg2);border:1px solid var(--border2);border-radius:5px;padding:4px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.6);min-width:160px;display:none;}
+.ctx-item{padding:7px 12px;font-size:12px;cursor:pointer;border-radius:3px;color:var(--text);font-family:var(--sans);display:flex;align-items:center;gap:8px;transition:background .1s;}
+.ctx-item:hover{background:var(--bg3);color:#fff;}
+.ctx-sep{height:1px;background:var(--border);margin:4px 0;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 28 28" fill="none">
+        <polygon points="14,2 26,9 26,19 14,26 2,19 2,9" stroke="#0cf" stroke-width="1.5" fill="none"/>
+        <circle cx="14" cy="14" r="5" stroke="#0cf" stroke-width="1" fill="rgba(0,204,255,0.12)"/>
+        <circle cx="14" cy="2" r="2" fill="#0cf"/>
+        <circle cx="26" cy="9" r="2" fill="#0cf" opacity=".6"/>
+        <circle cx="26" cy="19" r="2" fill="#0cf" opacity=".6"/>
+        <circle cx="14" cy="26" r="2" fill="#0cf" opacity=".4"/>
+        <circle cx="2" cy="19" r="2" fill="#0cf" opacity=".6"/>
+        <circle cx="2" cy="9" r="2" fill="#0cf" opacity=".6"/>
+      </svg>
+    </div>
+    <span class="logo-text">NET<span>SCOPE</span></span>
+  </div>
+  <div class="topbar-breadcrumb">
+    <span>Workspaces</span><span class="sep">/</span>
+    <span>Lab-01</span><span class="sep">/</span>
+    <span class="crumb-active" id="breadcrumbActive">Topology View</span>
+  </div>
+  <div class="topbar-spacer"></div>
+  <div class="topbar-status">
+    <div class="topbar-time" id="clock">00:00:00 UTC</div>
+    <div class="status-pill"><span class="status-dot"></span><span id="nodeCountPill">12 nodes active</span></div>
+    <div class="topbar-btn" title="Settings">⚙</div>
+    <div class="topbar-btn" title="Notifications">🔔</div>
+    <div class="topbar-btn" title="User">👤</div>
+  </div>
+</div>
+
+<div class="app-body">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Navigation</div>
+      <div class="nav-item active" id="nav-topology" onclick="switchTab('topology')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="4" r="2"/><circle cx="3" cy="12" r="2"/><circle cx="13" cy="12" r="2"/><line x1="8" y1="6" x2="3" y2="10" stroke="currentColor" stroke-width="1"/><line x1="8" y1="6" x2="13" y2="10" stroke="currentColor" stroke-width="1"/></svg>
+        Topology
+      </div>
+      <div class="nav-item" id="nav-topics" onclick="switchTab('topics')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+        Topics
+      </div>
+      <div class="nav-item" id="nav-osi" onclick="switchTab('osi')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="2" rx=".5"/><rect x="2" y="7" width="12" height="2" rx=".5"/><rect x="2" y="11" width="12" height="2" rx=".5"/></svg>
+        OSI Model
+      </div>
+      <div class="nav-item" id="nav-protocols" onclick="switchTab('protocols')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h12M2 12h12"/><path d="M6 2v12M10 2v12"/></svg>
+        Protocols
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Active Topology</div>
+      <div style="padding:8px 14px;font-family:var(--mono);font-size:11px;">
+        <div style="color:var(--text3);margin-bottom:4px;">TYPE</div>
+        <div style="color:var(--accent)" id="sideTopoType">Custom / Enterprise</div>
+        <div style="color:var(--text3);margin-top:8px;margin-bottom:4px;">NODES</div>
+        <div style="color:var(--text)" id="sideTopoNodes">12</div>
+        <div style="color:var(--text3);margin-top:8px;margin-bottom:4px;">LINKS</div>
+        <div style="color:var(--text)" id="sideTopoLinks">15</div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Network Nodes</div>
+      <div class="node-tree" id="sidebarTree"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Alerts</div>
+      <div class="nav-item"><span style="color:var(--red);font-size:11px;">●</span>&nbsp; PKT Loss on R2 <div class="nav-badge alert">!</div></div>
+      <div class="nav-item"><span style="color:var(--amber);font-size:11px;">●</span>&nbsp; High CPU SW1 <div class="nav-badge warn">⚠</div></div>
+      <div class="nav-item"><span style="color:var(--text3);font-size:11px;">●</span>&nbsp; MTU mismatch <div class="nav-badge">i</div></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="tabs-bar">
+      <div class="tab active" id="tab-topology" onclick="switchTab('topology')">Topology</div>
+      <div class="tab" id="tab-topics" onclick="switchTab('topics')">Topics</div>
+      <div class="tab" id="tab-osi" onclick="switchTab('osi')">OSI Model</div>
+      <div class="tab" id="tab-protocols" onclick="switchTab('protocols')">Protocols</div>
+    </div>
+
+    <!-- ═══ TOPOLOGY TAB ═══ -->
+    <div class="tab-content active" id="content-topology" style="flex-direction:row;">
+      <div class="canvas-wrap" style="flex:1;">
+        <!-- Topology Switcher -->
+        <div class="topo-switcher">
+          <div class="topo-btn active" onclick="loadTopology('custom')" data-topo="custom">Custom</div>
+          <div class="topo-btn" onclick="loadTopology('star')" data-topo="star">Star</div>
+          <div class="topo-btn" onclick="loadTopology('bus')" data-topo="bus">Bus</div>
+          <div class="topo-btn" onclick="loadTopology('ring')" data-topo="ring">Ring</div>
+          <div class="topo-btn" onclick="loadTopology('mesh')" data-topo="mesh">Full Mesh</div>
+          <div class="topo-btn" onclick="loadTopology('tree')" data-topo="tree">Tree</div>
+          <div class="topo-btn" onclick="loadTopology('hybrid')" data-topo="hybrid">Hybrid</div>
+        </div>
+
+        <div class="canvas-toolbar">
+          <div class="canvas-btn active" title="Select" id="toolSelect">↖</div>
+          <div class="canvas-btn" title="Zoom In" onclick="zoomCanvas(1.2)">+</div>
+          <div class="canvas-btn" title="Zoom Out" onclick="zoomCanvas(0.8)">−</div>
+          <div class="canvas-btn" title="Fit" onclick="fitCanvas()">⊡</div>
+          <div style="height:4px;"></div>
+          <div class="canvas-btn active" title="Toggle Packets" id="togglePackets" onclick="togglePacketFlow()">⬡</div>
+          <div class="canvas-btn active" title="Show Labels" id="toggleLabels" onclick="toggleNodeLabels()">A</div>
+        </div>
+
+        <svg id="networkSvg">
+          <defs>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <g id="svgRoot">
+            <g id="edgesGroup"></g>
+            <g id="packetsGroup"></g>
+            <g id="nodesGroup"></g>
+          </g>
+        </svg>
+
+        <div class="canvas-legend">
+          <div class="legend-row"><svg width="12" height="12"><rect width="12" height="12" rx="2" fill="var(--accent)" opacity=".3"/><rect x="2" y="2" width="8" height="8" rx="1" fill="var(--accent)"/></svg><span>Router</span></div>
+          <div class="legend-row"><svg width="12" height="12"><rect x="0" y="3" width="12" height="6" rx="3" fill="var(--green)" opacity=".8"/></svg><span>Switch</span></div>
+          <div class="legend-row"><svg width="12" height="12"><polygon points="6,1 11,11 1,11" fill="var(--amber)"/></svg><span>Firewall</span></div>
+          <div class="legend-row"><svg width="12" height="12"><rect width="12" height="12" rx="1" fill="var(--purple)" opacity=".3"/><rect x="2" y="2" width="8" height="8" fill="var(--purple)"/></svg><span>Server</span></div>
+          <div class="legend-row"><svg width="12" height="12"><circle cx="6" cy="6" r="5" fill="var(--pink)" opacity=".3"/><circle cx="6" cy="6" r="3" fill="var(--pink)"/></svg><span>Host/PC</span></div>
+        </div>
+
+        <div class="canvas-stats">
+          <div class="stat-chip">Nodes: <span class="val" id="sc-nodes">12</span></div>
+          <div class="stat-chip">Links: <span class="val" id="sc-links">15</span></div>
+          <div class="stat-chip">Pkt/s: <span class="val green" id="sc-pps">1,847</span></div>
+          <div class="stat-chip">Latency: <span class="val" id="sc-lat">2.1ms</span></div>
+          <div class="stat-chip">Loss: <span class="val green" id="sc-loss">0.02%</span></div>
+        </div>
+
+        <div class="topo-info-overlay" id="topoInfoOverlay">
+          <div class="topo-name" id="topoInfoName">Custom / Enterprise</div>
+          <div id="topoInfoDesc" style="color:var(--text2);font-size:10px;line-height:1.6;">Hierarchical enterprise topology with firewall, core routers, distribution switches, and end hosts.</div>
+          <div class="topo-pros">✓ Scalable  ✓ Redundant</div>
+          <div class="topo-cons">✗ Complex config</div>
+        </div>
+      </div>
+
+      <!-- Right Panel -->
+      <div class="right-panel">
+        <div class="panel-block">
+          <div class="panel-block-title">SELECTED NODE <span class="action" onclick="deselectNode()">CLEAR</span></div>
+          <div id="nodeDetailContent"><div style="color:var(--text3);font-size:11px;text-align:center;padding:20px 0;font-family:var(--mono);">Click a node to inspect</div></div>
+        </div>
+        <div class="panel-block">
+          <div class="panel-block-title">TRAFFIC FLOW</div>
+          <div class="sparkline-label">Bandwidth (Mbps)</div>
+          <canvas class="sparkline" id="bwSparkline"></canvas>
+          <div class="sparkline-label" style="margin-top:10px;">Packet Rate (k/s)</div>
+          <canvas class="sparkline" id="ppsSparkline"></canvas>
+        </div>
+        <div class="panel-block">
+          <div class="panel-block-title">ACTIVE FLOWS</div>
+          <div class="iface-row"><div class="tree-dot" style="background:var(--green);box-shadow:0 0 4px var(--green);"></div><div class="iface-name">TCP 10.0.0.1→10.0.0.5</div><div class="iface-ip">:443</div></div>
+          <div class="iface-row"><div class="tree-dot" style="background:var(--green);box-shadow:0 0 4px var(--green);"></div><div class="iface-name">UDP 10.0.1.2→8.8.8.8</div><div class="iface-ip">:53</div></div>
+          <div class="iface-row"><div class="tree-dot" style="background:var(--amber);"></div><div class="iface-name">TCP 10.0.0.8→10.0.2.1</div><div class="iface-ip">:22</div></div>
+          <div class="iface-row"><div class="tree-dot" style="background:var(--accent);box-shadow:0 0 4px var(--accent);"></div><div class="iface-name">ICMP 10.0.0.1→10.0.0.2</div><div class="iface-ip">echo</div></div>
+        </div>
+        <div class="panel-block" style="flex:1;">
+          <div class="panel-block-title">EVENT LOG</div>
+          <div class="log-wrap" id="eventLog"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TOPICS TAB ═══ -->
+    <div class="tab-content" id="content-topics">
+      <div class="topics-layout">
+        <div class="topics-grid-wrap">
+          <div class="topics-grid" id="topicsGrid"></div>
+        </div>
+        <div class="topic-detail-panel hidden" id="topicDetailPanel">
+          <div class="tdp-header">
+            <div>
+              <div class="tdp-title" id="tdpTitle">—</div>
+              <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:2px;" id="tdpSubtitle">—</div>
+            </div>
+            <div class="tdp-close" onclick="closeTopicDetail()">✕</div>
+          </div>
+          <div class="tdp-body" id="tdpBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ OSI TAB ═══ -->
+    <div class="tab-content" id="content-osi">
+      <div class="osi-wrap">
+        <div class="osi-stack" id="osiStack"></div>
+        <div class="osi-info-panel">
+          <div class="osi-encap">
+            <div class="encap-title">DATA ENCAPSULATION</div>
+            <div class="encap-stack" id="encapStack"></div>
+          </div>
+          <div class="osi-encap">
+            <div class="encap-title">HOW IT WORKS</div>
+            <div style="font-size:11.5px;color:var(--text2);line-height:1.7;">Data travels <span style="color:var(--accent)">down</span> the stack on the sender gaining headers (encapsulation). On the <span style="color:var(--green)">receiver</span>, each layer strips its header and passes data upward (decapsulation). Click any layer to expand.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PROTOCOLS TAB ═══ -->
+    <div class="tab-content" id="content-protocols">
+      <div class="protocols-wrap">
+        <table class="proto-table">
+          <thead><tr><th>Protocol</th><th>Layer</th><th>Port</th><th>Type</th><th>Description</th></tr></thead>
+          <tbody id="protoTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUSBAR -->
+<div class="statusbar">
+  <div class="sb-item"><div class="dot" style="background:var(--green);box-shadow:0 0 4px var(--green);"></div>Connected</div>
+  <div class="sb-item"><div class="dot" style="background:var(--accent);"></div>Lab-01 · 10.0.0.0/24</div>
+  <div class="sb-item">Zoom: <span id="zoomLabel">100%</span></div>
+  <div class="sb-item">Topology: <span style="color:var(--accent)" id="sb-topo">Custom</span></div>
+  <div class="sb-spacer"></div>
+  <div class="sb-item">Engine: SVG v2.1</div>
+  <div class="sb-item" id="sb-time"></div>
+</div>
+
+<!-- CTX MENU -->
+<div class="ctx-menu" id="ctxMenu">
+  <div class="ctx-item" onclick="ctxAction('inspect')">🔍 Inspect Node</div>
+  <div class="ctx-item" onclick="ctxAction('ping')">📡 Ping Node</div>
+  <div class="ctx-item" onclick="ctxAction('trace')">🔗 Trace Route</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="ctxAction('highlight')">✨ Highlight Links</div>
+  <div class="ctx-item" onclick="fitCanvas()">⊡ Fit to Canvas</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// TOPOLOGY DEFINITIONS
+// ═══════════════════════════════════════════════════════
+const typeColors = { router:'#0cf', switch:'#0f9', firewall:'#f90', server:'#a78bfa', host:'#ec4899', hub:'#f34', cloud:'#7090a8' };
+
+const TOPOLOGIES = {
+  custom: {
+    name:'Custom / Enterprise', short:'Custom',
+    desc:'Hierarchical enterprise topology with firewall, core routers, distribution switches, and end hosts.',
+    pros:['Scalable','Redundant paths','Hierarchical'],
+    cons:['Complex config','Higher cost'],
+    nodes:[
+      {id:'fw1', label:'FW-01',   sub:'203.0.113.1', type:'firewall', x:380,y:55},
+      {id:'r1',  label:'R-CORE', sub:'10.0.0.1',    type:'router',   x:380,y:155},
+      {id:'r2',  label:'R-EDGE1',sub:'10.0.1.1',    type:'router',   x:200,y:265},
+      {id:'r3',  label:'R-EDGE2',sub:'10.0.2.1',    type:'router',   x:560,y:265},
+      {id:'sw1', label:'SW-01',  sub:'10.0.1.2',    type:'switch',   x:110,y:375},
+      {id:'sw2', label:'SW-02',  sub:'10.0.1.3',    type:'switch',   x:280,y:375},
+      {id:'sw3', label:'SW-03',  sub:'10.0.2.2',    type:'switch',   x:460,y:375},
+      {id:'sw4', label:'SW-04',  sub:'10.0.2.3',    type:'switch',   x:620,y:375},
+      {id:'srv1',label:'WEB-SRV',sub:'10.0.1.10',   type:'server',   x:80, y:470},
+      {id:'srv2',label:'DB-SRV', sub:'10.0.1.11',   type:'server',   x:240,y:470},
+      {id:'h1',  label:'HOST-01',sub:'10.0.2.20',   type:'host',     x:430,y:470},
+      {id:'h2',  label:'HOST-02',sub:'10.0.2.21',   type:'host',     x:590,y:470},
+    ],
+    edges:[
+      {from:'fw1',to:'r1',active:true},{from:'r1',to:'r2',active:true},{from:'r1',to:'r3',active:true},
+      {from:'r2',to:'sw1',active:false},{from:'r2',to:'sw2',active:true},{from:'r3',to:'sw3',active:true},{from:'r3',to:'sw4',active:true},
+      {from:'sw1',to:'srv1',active:true},{from:'sw2',to:'srv2',active:false},{from:'sw3',to:'h1',active:true},{from:'sw4',to:'h2',active:true},
+      {from:'r2',to:'r3',active:false},
+    ]
+  },
+  star: {
+    name:'Star Topology', short:'Star',
+    desc:'All nodes connect to a central switch/hub. Simple, easy to manage. Single point of failure at center.',
+    pros:['Easy troubleshoot','Isolated failures','Simple add/remove nodes'],
+    cons:['Central SPOF','More cable needed','Hub bottleneck'],
+    get nodes() {
+      const cx=380,cy=270,r=200;
+      const hosts = Array.from({length:8},(_,i)=>({
+        id:`h${i}`,label:`Host-0${i+1}`,sub:`192.168.1.${i+10}`,type:'host',
+        x:cx+r*Math.cos((i/8)*2*Math.PI-Math.PI/2),
+        y:cy+r*Math.sin((i/8)*2*Math.PI-Math.PI/2)
+      }));
+      return [{id:'sw0',label:'SW-CORE',sub:'192.168.1.1',type:'switch',x:cx,y:cy},...hosts];
+    },
+    get edges() {
+      return Array.from({length:8},(_,i)=>({from:'sw0',to:`h${i}`,active:i%3!==2}));
+    }
+  },
+  bus: {
+    name:'Bus Topology', short:'Bus',
+    desc:'All nodes share a single communication line (backbone). Cheap and simple but collisions increase with scale.',
+    pros:['Low cable cost','Easy to extend','Simple'],
+    cons:['Backbone failure = total outage','Collision domain','Difficult troubleshoot'],
+    get nodes() {
+      const nodes=[{id:'bb',label:'BACKBONE',sub:'(Bus)',type:'hub',x:380,y:270}];
+      const count=7;
+      for(let i=0;i<count;i++){
+        const x=80+i*(540/(count-1));
+        nodes.push({id:`n${i}`,label:`Node-0${i+1}`,sub:`10.1.0.${i+2}`,type:i===0||i===count-1?'router':'host',x,y:i%2===0?160:380});
+      }
+      return nodes.filter(n=>n.id!=='bb');
+    },
+    get edges() {
+      const count=7;
+      const edges=[];
+      for(let i=0;i<count-1;i++) edges.push({from:`n${i}`,to:`n${i+1}`,active:i!==3});
+      return edges;
+    }
+  },
+  ring: {
+    name:'Ring Topology', short:'Ring',
+    desc:'Nodes form a closed loop. Data travels in one direction (or both in dual-ring). Used in SONET/SDH fiber networks.',
+    pros:['Equal access','No collisions','Predictable performance'],
+    cons:['Single break disrupts (single ring)','Difficult reconfigure','Slower add/remove'],
+    get nodes() {
+      const cx=380,cy=270,r=190,count=9;
+      return Array.from({length:count},(_,i)=>({
+        id:`r${i}`,label:i===0?'GW-01':`Node-0${i}`,sub:`10.2.${i}.1`,
+        type:i===0?'router':i===4?'server':'host',
+        x:cx+r*Math.cos((i/count)*2*Math.PI-Math.PI/2),
+        y:cy+r*Math.sin((i/count)*2*Math.PI-Math.PI/2)
+      }));
+    },
+    get edges() {
+      const count=9;
+      return Array.from({length:count},(_,i)=>({from:`r${i}`,to:`r${(i+1)%count}`,active:i!==6}));
+    }
+  },
+  mesh: {
+    name:'Full Mesh Topology', short:'Full Mesh',
+    desc:'Every node connects directly to every other node. Maximum redundancy. Used in WAN core routers and critical infrastructure.',
+    pros:['No single point of failure','Direct paths','Very robust'],
+    cons:['Expensive O(n²) links','Complex management','Rarely used at scale'],
+    get nodes() {
+      const cx=380,cy=270,r=180,count=6;
+      return Array.from({length:count},(_,i)=>({
+        id:`m${i}`,label:`R-0${i+1}`,sub:`10.10.${i}.1`,type:'router',
+        x:cx+r*Math.cos((i/count)*2*Math.PI-Math.PI/2),
+        y:cy+r*Math.sin((i/count)*2*Math.PI-Math.PI/2)
+      }));
+    },
+    get edges() {
+      const count=6,edges=[];
+      for(let i=0;i<count;i++) for(let j=i+1;j<count;j++) edges.push({from:`m${i}`,to:`m${j}`,active:true});
+      return edges;
+    }
+  },
+  tree: {
+    name:'Tree Topology', short:'Tree',
+    desc:'Hierarchical star topology. Root at top, branches extend down. Common in corporate LAN with core→distribution→access layers.',
+    pros:['Scalable hierarchy','Easy segment','Manageable'],
+    cons:['Root failure critical','More cabling','Complex'],
+    get nodes() {
+      return [
+        {id:'t0',label:'ROOT-SW',sub:'10.3.0.1',type:'switch',x:380,y:60},
+        {id:'t1',label:'DIST-L',sub:'10.3.1.1',type:'switch',x:210,y:175},{id:'t2',label:'DIST-R',sub:'10.3.2.1',type:'switch',x:550,y:175},
+        {id:'t3',label:'ACC-01',sub:'10.3.1.2',type:'switch',x:110,y:300},{id:'t4',label:'ACC-02',sub:'10.3.1.3',type:'switch',x:290,y:300},
+        {id:'t5',label:'ACC-03',sub:'10.3.2.2',type:'switch',x:470,y:300},{id:'t6',label:'ACC-04',sub:'10.3.2.3',type:'switch',x:640,y:300},
+        {id:'t7',label:'PC-01',sub:'10.3.1.10',type:'host',x:60, y:415},{id:'t8',label:'PC-02',sub:'10.3.1.11',type:'host',x:150,y:415},
+        {id:'t9',label:'PC-03',sub:'10.3.1.20',type:'host',x:250,y:415},{id:'t10',label:'PC-04',sub:'10.3.1.21',type:'host',x:330,y:415},
+        {id:'t11',label:'SRV-01',sub:'10.3.2.10',type:'server',x:430,y:415},{id:'t12',label:'SRV-02',sub:'10.3.2.11',type:'server',x:510,y:415},
+        {id:'t13',label:'PC-05',sub:'10.3.2.20',type:'host',x:600,y:415},{id:'t14',label:'PC-06',sub:'10.3.2.21',type:'host',x:680,y:415},
+      ];
+    },
+    get edges() {
+      return [
+        {from:'t0',to:'t1',active:true},{from:'t0',to:'t2',active:true},
+        {from:'t1',to:'t3',active:true},{from:'t1',to:'t4',active:true},{from:'t2',to:'t5',active:true},{from:'t2',to:'t6',active:false},
+        {from:'t3',to:'t7',active:true},{from:'t3',to:'t8',active:true},{from:'t4',to:'t9',active:false},{from:'t4',to:'t10',active:true},
+        {from:'t5',to:'t11',active:true},{from:'t5',to:'t12',active:true},{from:'t6',to:'t13',active:true},{from:'t6',to:'t14',active:true},
+      ];
+    }
+  },
+  hybrid: {
+    name:'Hybrid Topology', short:'Hybrid',
+    desc:'Combination of two or more topologies. Most real-world enterprise networks are hybrid (e.g., star+mesh core + ring backbone).',
+    pros:['Best of multiple','Flexible design','Fault tolerant'],
+    cons:['Complex design','Costly','Hard maintain'],
+    get nodes() {
+      return [
+        {id:'h0',label:'CLOUD',sub:'Internet',type:'cloud',x:380,y:40},
+        {id:'h1',label:'FW-01',sub:'203.0.0.1',type:'firewall',x:260,y:140},{id:'h2',label:'FW-02',sub:'203.0.0.2',type:'firewall',x:500,y:140},
+        {id:'h3',label:'R-CORE1',sub:'10.0.1.1',type:'router',x:200,y:250},{id:'h4',label:'R-CORE2',sub:'10.0.2.1',type:'router',x:560,y:250},
+        {id:'h5',label:'R-CORE3',sub:'10.0.3.1',type:'router',x:380,y:310},
+        {id:'h6',label:'SW-A',sub:'10.1.0.1',type:'switch',x:140,y:390},{id:'h7',label:'SW-B',sub:'10.1.0.2',type:'switch',x:380,y:390},{id:'h8',label:'SW-C',sub:'10.1.0.3',type:'switch',x:620,y:390},
+        {id:'h9',label:'SRV-01',sub:'10.1.1.1',type:'server',x:80, y:480},{id:'h10',label:'SRV-02',sub:'10.1.1.2',type:'server',x:200,y:480},
+        {id:'h11',label:'PC-01',sub:'10.1.2.1',type:'host',x:320,y:480},{id:'h12',label:'PC-02',sub:'10.1.2.2',type:'host',x:440,y:480},
+        {id:'h13',label:'PC-03',sub:'10.1.3.1',type:'host',x:570,y:480},{id:'h14',label:'PC-04',sub:'10.1.3.2',type:'host',x:670,y:480},
+      ];
+    },
+    get edges() {
+      return [
+        {from:'h0',to:'h1',active:true},{from:'h0',to:'h2',active:true},
+        {from:'h1',to:'h3',active:true},{from:'h2',to:'h4',active:true},
+        {from:'h3',to:'h5',active:true},{from:'h4',to:'h5',active:true},{from:'h3',to:'h4',active:false},
+        {from:'h3',to:'h6',active:true},{from:'h5',to:'h7',active:true},{from:'h4',to:'h8',active:true},
+        {from:'h6',to:'h9',active:true},{from:'h6',to:'h10',active:true},
+        {from:'h7',to:'h11',active:true},{from:'h7',to:'h12',active:false},
+        {from:'h8',to:'h13',active:true},{from:'h8',to:'h14',active:true},
+      ];
+    }
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// TOPIC DETAIL DEFINITIONS
+// ═══════════════════════════════════════════════════════
+const TOPICS = [
+  { num:'01', icon:'⬡', color:'#0cf',    title:'Network Topologies',   tags:['Star','Mesh','Bus','Ring','Hybrid'],          desc:'Visualize real packet routing across star, mesh, bus, ring and hybrid topologies.', progress:75, key:'topologies' },
+  { num:'02', icon:'▤', color:'#f90',    title:'OSI Reference Model',  tags:['7 Layers','PDU','Encapsulation'],             desc:'Step through all 7 OSI layers with live protocol mapping and data encapsulation.',  progress:90, key:'osi' },
+  { num:'03', icon:'◈', color:'#0f9',    title:'Routing Algorithms',   tags:['OSPF','RIP','BGP','Dijkstra'],                desc:'Watch Dijkstra and Bellman-Ford find shortest paths with animated edge relaxation.', progress:60, key:'routing' },
+  { num:'04', icon:'⊕', color:'#a78bfa', title:'TCP/IP Suite',         tags:['TCP','UDP','IPv4','IPv6','ICMP'],             desc:'Observe the 3-way handshake, window scaling, and congestion avoidance live.',        progress:85, key:'tcp' },
+  { num:'05', icon:'⊛', color:'#ec4899', title:'Subnetting & CIDR',    tags:['CIDR','VLSM','Mask','Broadcast'],            desc:'Interactive subnet calculator with visual address space partitioner.',              progress:50, key:'subnet' },
+  { num:'06', icon:'⬢', color:'#f34',    title:'Network Security',     tags:['TLS','VPN','Firewall','ACL','IDS'],          desc:'Simulate firewalls, VPN tunnels, TLS handshakes, and attack/defense scenarios.',    progress:40, key:'security' },
+  { num:'07', icon:'⊚', color:'#0cf',    title:'DNS & DHCP',           tags:['DNS','DHCP','ARP','NAT'],                    desc:'Trace domain name resolution through recursive resolvers and authoritative servers.', progress:70, key:'dns' },
+  { num:'08', icon:'≋', color:'#0f9',    title:'Wireless Networks',    tags:['802.11','WPA3','CSMA/CA','MIMO'],            desc:'WiFi standards, signal propagation, and channel interference in animated form.',      progress:35, key:'wireless' },
+  { num:'09', icon:'◫', color:'#f90',    title:'SDN & Cloud Networks', tags:['SDN','OpenFlow','VXLAN','NFV'],              desc:'Software-defined networking, virtual overlays, and cloud-native architectures.',     progress:55, key:'sdn' },
+];
+
+const TOPIC_DETAILS = {
+  topologies: {
+    subtitle:'Visualize & Compare Network Types',
+    sections:[
+      { type:'diagram', title:'TOPOLOGY COMPARISON', key:'topo_compare' },
+      { type:'infocards', title:'KEY METRICS', cards:[
+        {label:'Nodes (Star)',val:'1+N',cls:'accent'},{label:'Links (Star)',val:'N',cls:'green'},
+        {label:'Nodes (Mesh)',val:'N',cls:'accent'},{label:'Links (Mesh)',val:'N(N-1)/2',cls:'amber'},
+      ]},
+      { type:'prosconsall', title:'PROS & CONS BY TYPE', items:[
+        {name:'Star',pros:['Simple mgmt','Isolated faults'],cons:['Central SPOF','Hub bottleneck']},
+        {name:'Mesh',pros:['Max redundancy','Direct paths'],cons:['Expensive','O(n²) links']},
+        {name:'Ring',pros:['Equal access','Deterministic'],cons:['One break = outage','Slow reconfig']},
+        {name:'Bus',pros:['Low cost','Simple install'],cons:['Collision domain','Backbone critical']},
+      ]},
+      { type:'info', title:'USE CASES', text:'Star → home/office LANs. Ring → SONET fiber, Token Ring. Mesh → WAN core routers, ISP backbones. Bus → legacy coax Ethernet. Tree → enterprise campus. Hybrid → modern data centers and enterprise WANs.' }
+    ]
+  },
+  osi: {
+    subtitle:'7-Layer Reference Model',
+    sections:[
+      { type:'osistack_mini', title:'OSI STACK VISUAL' },
+      { type:'infocards', title:'LAYER FACTS', cards:[
+        {label:'Total Layers',val:'7',cls:'accent'},{label:'Transport PDU',val:'Segment',cls:'green'},
+        {label:'Network PDU',val:'Packet',cls:'amber'},{label:'DataLink PDU',val:'Frame',cls:'purple'},
+      ]},
+      { type:'steps', title:'DATA FLOW: SENDER→RECEIVER', steps:[
+        'App generates data (HTTP request)',
+        'Presentation encrypts/encodes (TLS)',
+        'Session establishes connection token',
+        'Transport adds TCP header + port numbers',
+        'Network adds IP src/dst header',
+        'Data Link adds MAC src/dst + CRC frame',
+        'Physical converts to bits → electrical/light signal',
+        'Receiver strips headers layer by layer upward',
+      ]},
+      { type:'info', title:'REMEMBER: PLEASE DO NOT THROW SAUSAGE PIZZA AWAY', text:'Physical → Data Link → Network → Transport → Session → Presentation → Application. (mnemonic: bottom to top)' }
+    ]
+  },
+  routing: {
+    subtitle:'Path Finding & Route Distribution',
+    sections:[
+      { type:'routing_anim', title:'DIJKSTRA SHORTEST PATH' },
+      { type:'infocards', title:'ALGORITHM COMPARISON', cards:[
+        {label:'Dijkstra Type',val:'Greedy',cls:'accent'},{label:'Complexity',val:'O((V+E)logV)',cls:'amber'},
+        {label:'OSPF Type',val:'Link-State',cls:'green'},{label:'BGP Type',val:'Path-Vector',cls:'purple'},
+      ]},
+      { type:'steps', title:'OSPF CONVERGENCE STEPS', steps:[
+        'Router discovers neighbors via HELLO packets',
+        'Build adjacency with DR/BDR election on broadcast',
+        'Exchange LSAs (Link State Advertisements)',
+        'Build LSDB (Link State Database)',
+        'Run Dijkstra SPF algorithm on LSDB',
+        'Install best routes into routing table (RIB→FIB)',
+      ]},
+      { type:'prosconsall', title:'PROTOCOL COMPARISON', items:[
+        {name:'RIP v2',pros:['Simple config','Distance-vector'],cons:['Max 15 hops','Slow converge']},
+        {name:'OSPF',pros:['Fast converge','Link-state'],cons:['Memory heavy','Complex design']},
+        {name:'BGP',pros:['Internet scale','Policy control'],cons:['Slow converge','Complex tuning']},
+        {name:'EIGRP',pros:['Fast DUAL algo','Cisco advanced'],cons:['Mostly Cisco','Proprietary']},
+      ]}
+    ]
+  },
+  tcp: {
+    subtitle:'Transport Layer Deep Dive',
+    sections:[
+      { type:'handshake_anim', title:'TCP 3-WAY HANDSHAKE' },
+      { type:'infocards', title:'TCP vs UDP', cards:[
+        {label:'TCP Delivery',val:'Reliable',cls:'green'},{label:'UDP Delivery',val:'Best-effort',cls:'amber'},
+        {label:'TCP Header',val:'20 bytes min',cls:'accent'},{label:'UDP Header',val:'8 bytes fixed',cls:'green'},
+      ]},
+      { type:'steps', title:'TCP CONNECTION LIFECYCLE', steps:[
+        'SYN → Client sends SYN with ISN (Seq=x)',
+        'SYN-ACK → Server responds SYN-ACK (Seq=y, Ack=x+1)',
+        'ACK → Client sends ACK (Ack=y+1) — connection ESTABLISHED',
+        'Data transfer with sliding window flow control',
+        'Congestion control: slow start → congestion avoidance → fast retransmit',
+        'FIN/FIN-ACK/ACK — graceful 4-way teardown',
+      ]},
+      { type:'info', title:'KEY TCP FIELDS', text:'Source Port (16b) · Dest Port (16b) · Sequence # (32b) · Ack # (32b) · Flags: SYN ACK FIN RST PSH URG (6b) · Window Size (16b) · Checksum (16b) · Urgent Pointer (16b) · Options (var).' }
+    ]
+  },
+  subnet: {
+    subtitle:'IP Addressing & Subnetting',
+    sections:[
+      { type:'subnet_calc', title:'INTERACTIVE SUBNET CALCULATOR' },
+      { type:'infocards', title:'CIDR REFERENCE', cards:[
+        {label:'/24 Hosts',val:'254',cls:'green'},{label:'/16 Hosts',val:'65,534',cls:'accent'},
+        {label:'/8 Hosts',val:'16.7M',cls:'amber'},{label:'/30 Hosts',val:'2',cls:'purple'},
+      ]},
+      { type:'steps', title:'SUBNETTING STEPS', steps:[
+        'Determine required number of subnets/hosts',
+        'Find the subnet bits needed: 2^n ≥ subnets',
+        'Calculate new prefix length: original + subnet bits',
+        'Compute subnet increment: 256 − subnet mask octet',
+        'List all subnets: network, first host, last host, broadcast',
+        'Apply VLSM for efficient allocation of different-size subnets',
+      ]},
+      { type:'info', title:'PRIVATE IP RANGES (RFC 1918)', text:'10.0.0.0/8 (Class A) — 16,777,214 hosts\n172.16.0.0/12 (Class B) — 1,048,574 hosts\n192.168.0.0/16 (Class C) — 65,534 hosts\nLoopback: 127.0.0.1 · APIPA: 169.254.x.x' }
+    ]
+  },
+  security: {
+    subtitle:'Network Defense & Attack Vectors',
+    sections:[
+      { type:'security_anim', title:'FIREWALL + TLS FLOW' },
+      { type:'infocards', title:'THREAT OVERVIEW', cards:[
+        {label:'ARP Spoof',val:'Layer 2',cls:'red'},{label:'SYN Flood',val:'Layer 4',cls:'red'},
+        {label:'DNS Poison',val:'App Layer',cls:'amber'},{label:'TLS MITM',val:'Layer 5/6',cls:'amber'},
+      ]},
+      { type:'steps', title:'TLS 1.3 HANDSHAKE', steps:[
+        'Client Hello → supported ciphers + key_share (EC Diffie-Hellman)',
+        'Server Hello → chosen cipher + key_share + certificate',
+        'Client validates certificate chain (CA trust)',
+        'Both derive session keys from shared secret (ECDH)',
+        'Handshake encrypted from this point on',
+        'Application data flows over AES-GCM / ChaCha20-Poly1305',
+      ]},
+      { type:'prosconsall', title:'ATTACK vs DEFENSE', items:[
+        {name:'ARP Spoofing',pros:['Intercept traffic','MITM position'],cons:['DAI counters it','Detectable via IDS']},
+        {name:'SYN Flood',pros:['Exhaust server state','Low bandwidth DDoS'],cons:['SYN cookies mitigate','Rate limiting']},
+      ]}
+    ]
+  },
+  dns: {
+    subtitle:'Name Resolution & DHCP Lifecycle',
+    sections:[
+      { type:'dns_anim', title:'DNS RESOLUTION FLOW' },
+      { type:'infocards', title:'DNS RECORD TYPES', cards:[
+        {label:'A Record',val:'IPv4 addr',cls:'accent'},{label:'AAAA Record',val:'IPv6 addr',cls:'green'},
+        {label:'MX Record',val:'Mail server',cls:'amber'},{label:'CNAME',val:'Alias',cls:'purple'},
+      ]},
+      { type:'steps', title:'DNS RESOLUTION STEPS', steps:[
+        'Browser checks local DNS cache (TTL based)',
+        'OS checks /etc/hosts file',
+        'Query sent to Recursive Resolver (ISP/8.8.8.8)',
+        'Resolver queries Root nameserver (13 root clusters)',
+        'Root returns TLD nameserver (.com, .org, etc.)',
+        'TLD returns Authoritative nameserver for domain',
+        'Authoritative returns final A/AAAA record',
+        'Response cached at resolver and client per TTL',
+      ]},
+      { type:'info', title:'DHCP DORA PROCESS', text:'DISCOVER → client broadcasts on 255.255.255.255\nOFFER → server offers IP + lease time\nREQUEST → client requests the offered IP\nACKNOWLEDGE → server confirms lease\n\nLease renewal at 50% TTL (T1), rebind at 87.5% TTL (T2).' }
+    ]
+  },
+  wireless: {
+    subtitle:'IEEE 802.11 Standards & RF',
+    sections:[
+      { type:'infocards', title:'802.11 STANDARDS', cards:[
+        {label:'802.11ac (Wi-Fi 5)',val:'3.5 Gbps',cls:'accent'},{label:'802.11ax (Wi-Fi 6)',val:'9.6 Gbps',cls:'green'},
+        {label:'2.4 GHz Channels',val:'11 (3 non-overlap)',cls:'amber'},{label:'5 GHz Channels',val:'25+ non-overlap',cls:'purple'},
+      ]},
+      { type:'steps', title:'WPA3 AUTHENTICATION (SAE)', steps:[
+        'Client and AP both know the password (PSK)',
+        'SAE (Simultaneous Authentication of Equals) initiates',
+        'Both parties commit to DH group values',
+        'Confirm phase verifies shared secret (PMK)',
+        'Four-way handshake derives PTK (Pairwise Transient Key)',
+        'GTK (Group Transient Key) for broadcast/multicast',
+        'Data encrypted with AES-CCMP or GCMP-256',
+      ]},
+      { type:'prosconsall', title:'2.4 GHz vs 5 GHz', items:[
+        {name:'2.4 GHz',pros:['Better range','Wall penetration','Legacy device support'],cons:['Only 3 non-overlap channels','Congested (microwaves, BT)','Slower max speed']},
+        {name:'5 GHz',pros:['More channels','Less interference','Higher throughput'],cons:['Shorter range','Poor obstacle penetration','Fewer legacy devices']},
+      ]},
+      { type:'info', title:'CSMA/CA COLLISION AVOIDANCE', text:'Unlike CSMA/CD (Ethernet), wireless cannot detect collisions while transmitting. CSMA/CA uses: 1) Listen before transmit (carrier sense), 2) Random backoff timer, 3) RTS/CTS for hidden node problem, 4) ACK for each frame.' }
+    ]
+  },
+  sdn: {
+    subtitle:'Software-Defined & Cloud Networking',
+    sections:[
+      { type:'sdn_anim', title:'SDN ARCHITECTURE' },
+      { type:'infocards', title:'SDN vs TRADITIONAL', cards:[
+        {label:'Control Plane',val:'Centralized',cls:'accent'},{label:'Data Plane',val:'Distributed',cls:'green'},
+        {label:'Mgmt Protocol',val:'OpenFlow',cls:'amber'},{label:'Overlay Proto',val:'VXLAN/Geneve',cls:'purple'},
+      ]},
+      { type:'steps', title:'SDN PACKET FLOW (OpenFlow)', steps:[
+        'Packet arrives at SDN switch (data plane only)',
+        'Switch checks local flow table for match',
+        'If no match → Packet-In message to SDN controller',
+        'Controller runs application logic to determine action',
+        'Controller sends Flow-Mod to install flow rule',
+        'Switch executes action: forward/drop/modify/flood',
+        'Subsequent matching packets handled locally (fast path)',
+      ]},
+      { type:'info', title:'VXLAN OVERLAY', text:'VXLAN (Virtual Extensible LAN) encapsulates Layer 2 frames in UDP (port 4789) over Layer 3. 24-bit VNI (VXLAN Network Identifier) allows 16M virtual segments vs 4096 VLAN limit. Used in AWS VPC, VMware NSX, OpenStack Neutron.' }
+    ]
+  },
+};
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let selectedNode=null, svgZoom=1, svgPan={x:0,y:0};
+let showPackets=true, showLabels=true;
+let currentTopo='custom', currentCtxNode=null;
+let packetAnimFrames=[];
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  updateClock();setInterval(updateClock,1000);
+  loadTopology('custom');
+  buildTopics();buildOSI();buildProtocols();buildEncapStack();
+  startSparklines();startEventLog();startLiveStats();
+  setupPanDrag();
+});
+
+function updateClock(){
+  const n=new Date(),s=v=>String(v).padStart(2,'0');
+  const t=`${s(n.getUTCHours())}:${s(n.getUTCMinutes())}:${s(n.getUTCSeconds())} UTC`;
+  document.getElementById('clock').textContent=t;
+  document.getElementById('sb-time').textContent=t;
+}
+
+function switchTab(tab){
+  ['topology','topics','osi','protocols'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+    document.getElementById('content-'+t).classList.toggle('active',t===tab);
+    document.getElementById('nav-'+t).classList.toggle('active',t===tab);
+  });
+  document.getElementById('breadcrumbActive').textContent={topology:'Topology View',topics:'Topics',osi:'OSI Model',protocols:'Protocols'}[tab];
+}
+
+// ═══════════════════════════════════════════════════════
+// TOPOLOGY RENDERING
+// ═══════════════════════════════════════════════════════
+const typeShapes={
+  router:(x,y,c)=>`<rect x="${x-12}" y="${y-12}" width="24" height="24" rx="3" fill="${c}22" stroke="${c}" stroke-width="1.5"/><text x="${x}" y="${y+5}" text-anchor="middle" font-size="13" fill="${c}" font-family="monospace">R</text>`,
+  switch:(x,y,c)=>`<rect x="${x-14}" y="${y-7}" width="28" height="14" rx="4" fill="${c}22" stroke="${c}" stroke-width="1.5"/><circle cx="${x-6}" cy="${y}" r="2.5" fill="${c}"/><circle cx="${x+6}" cy="${y}" r="2.5" fill="${c}"/>`,
+  firewall:(x,y,c)=>`<polygon points="${x},${y-15} ${x+13},${y+8} ${x-13},${y+8}" fill="${c}22" stroke="${c}" stroke-width="1.5"/><line x1="${x}" y1="${y-7}" x2="${x}" y2="${y+2}" stroke="${c}" stroke-width="2"/>`,
+  server:(x,y,c)=>`<rect x="${x-12}" y="${y-14}" width="24" height="28" rx="2" fill="${c}22" stroke="${c}" stroke-width="1.5"/><line x1="${x-7}" y1="${y-7}" x2="${x+7}" y2="${y-7}" stroke="${c}" stroke-width="1"/><line x1="${x-7}" y1="${y}" x2="${x+7}" y2="${y}" stroke="${c}" stroke-width="1"/><circle cx="${x+7}" cy="${y+7}" r="2" fill="${c}"/>`,
+  host:(x,y,c)=>`<circle cx="${x}" cy="${y}" r="12" fill="${c}22" stroke="${c}" stroke-width="1.5"/><text x="${x}" y="${y+5}" text-anchor="middle" font-size="11" fill="${c}" font-family="monospace">H</text>`,
+  hub:(x,y,c)=>`<rect x="${x-13}" y="${y-9}" width="26" height="18" rx="2" fill="${c}22" stroke="${c}" stroke-width="1.5" stroke-dasharray="4 2"/>`,
+  cloud:(x,y,c)=>`<ellipse cx="${x}" cy="${y}" rx="22" ry="14" fill="${c}22" stroke="${c}" stroke-width="1" stroke-dasharray="5 3"/><text x="${x}" y="${y+5}" text-anchor="middle" font-size="9" fill="${c}" font-family="monospace">☁</text>`,
+};
+
+function loadTopology(key){
+  // Cancel existing packet animations
+  packetAnimFrames.forEach(id=>cancelAnimationFrame(id));
+  packetAnimFrames=[];
+  document.getElementById('packetsGroup').innerHTML='';
+
+  currentTopo=key;
+  const topo=TOPOLOGIES[key];
+  const nodes=typeof topo.nodes==='function'?topo.nodes():topo.nodes;
+  const edges=typeof topo.edges==='function'?topo.edges():topo.edges;
+
+  // Update UI
+  document.querySelectorAll('.topo-btn').forEach(b=>b.classList.toggle('active',b.dataset.topo===key));
+  document.getElementById('sideTopoType').textContent=topo.name;
+  document.getElementById('sideTopoNodes').textContent=nodes.length;
+  document.getElementById('sideTopoLinks').textContent=edges.length;
+  document.getElementById('sb-topo').textContent=topo.short;
+  document.getElementById('sc-nodes').textContent=nodes.length;
+  document.getElementById('sc-links').textContent=edges.length;
+  document.getElementById('topoInfoName').textContent=topo.name;
+  document.getElementById('topoInfoDesc').textContent=topo.desc;
+  document.querySelector('.topo-info-overlay .topo-pros').textContent='✓ '+topo.pros.join('  ✓ ');
+  document.querySelector('.topo-info-overlay .topo-cons').textContent='✗ '+topo.cons.join('  ✗ ');
+  document.getElementById('nodeCountPill').textContent=nodes.length+' nodes active';
+
+  buildSidebarTree(nodes);
+  renderCanvas(nodes,edges);
+  deselectNode();
+  if(showPackets) setTimeout(()=>startPacketFlow(nodes,edges),80);
+  addLog('info','TOPO',`Switched to ${topo.name}`);
+}
+
+function getCanvasCenter(){
+  const svg=document.getElementById('networkSvg');
+  const r=svg.getBoundingClientRect();
+  return {w:r.width||700,h:r.height||500};
+}
+
+function renderCanvas(nodes,edges){
+  const {w,h}=getCanvasCenter();
+  // Auto-fit: find node bounds, compute offset to center
+  const xs=nodes.map(n=>n.x),ys=nodes.map(n=>n.y);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const nw=maxX-minX||1,nh=maxY-minY||1;
+  const scale=Math.min((w-100)/nw,(h-100)/nh,1.4)*0.9;
+  const ox=(w-(nw*scale))/2-minX*scale;
+  const oy=(h-(nh*scale))/2-minY*scale;
+
+  const cx=n=>n.x*scale+ox, cy=n=>n.y*scale+oy;
+
+  const edgesG=document.getElementById('edgesGroup');
+  const nodesG=document.getElementById('nodesGroup');
+
+  edgesG.innerHTML=edges.map((e,i)=>{
+    const f=nodes.find(n=>n.id===e.from),t=nodes.find(n=>n.id===e.to);
+    if(!f||!t) return '';
+    return `<line class="net-edge${e.active?' active':''}" id="edge-${i}" x1="${cx(f)}" y1="${cy(f)}" x2="${cx(t)}" y2="${cy(t)}"/>`;
+  }).join('');
+
+  nodesG.innerHTML=nodes.map(n=>{
+    const c=typeColors[n.type]||'#7090a8';
+    const x=cx(n),y=cy(n);
+    return `
+    <g class="net-node" id="node-${n.id}" onclick="selectNodeById('${n.id}',event)" oncontextmenu="openCtxMenu(event,'${n.id}')">
+      <circle cx="${x}" cy="${y}" r="22" fill="transparent" stroke="${c}" stroke-width="1" stroke-opacity="0.12" stroke-dasharray="3 3" class="node-ring"/>
+      <g class="node-body">${typeShapes[n.type]?typeShapes[n.type](x,y,c):typeShapes.host(x,y,c)}</g>
+      <text class="node-label" x="${x}" y="${y+30}" text-anchor="middle" style="${showLabels?'':'display:none'}">${n.label}</text>
+      <text class="node-sublabel" x="${x}" y="${y+40}" text-anchor="middle" style="${showLabels?'':'display:none'}">${n.sub}</text>
+    </g>`;
+  }).join('');
+
+  // Store scale/offset for packets
+  window._topoScale={scale,ox,oy};
+}
+
+function startPacketFlow(nodes,edges){
+  if(!showPackets) return;
+  const packetsG=document.getElementById('packetsGroup');
+  const {scale,ox,oy}=window._topoScale||{scale:1,ox:0,oy:0};
+  const cx=n=>n.x*scale+ox, cy=n=>n.y*scale+oy;
+
+  const activeEdges=edges.filter(e=>e.active);
+  activeEdges.forEach((e,i)=>{
+    const f=nodes.find(n=>n.id===e.from),t=nodes.find(n=>n.id===e.to);
+    if(!f||!t) return;
+    const col=e.from.includes('fw')||e.to.includes('fw')?'#f90':e.from.startsWith('r')||e.to.startsWith('r')?'#0cf':'#0f9';
+    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('r','3.5');
+    dot.setAttribute('fill',col);
+    dot.style.filter=`drop-shadow(0 0 4px ${col})`;
+    dot.setAttribute('class','packet-dot');
+    packetsG.appendChild(dot);
+
+    let progress=Math.random(), dir=1;
+    const speed=0.003+Math.random()*0.004;
+
+    const tick=()=>{
+      if(!showPackets){dot.remove();return;}
+      progress+=speed;
+      if(progress>=1){progress=0;dir=-dir;}
+      const px=cx(f)+(cx(t)-cx(f))*progress;
+      const py=cy(f)+(cy(t)-cy(f))*progress;
+      dot.setAttribute('cx',px);dot.setAttribute('cy',py);
+      const id=requestAnimationFrame(tick);
+      packetAnimFrames.push(id);
+    };
+    const id=requestAnimationFrame(tick);
+    packetAnimFrames.push(id);
+  });
+}
+
+function buildSidebarTree(nodes){
+  const tree=document.getElementById('sidebarTree');
+  tree.innerHTML=(nodes||[]).map(n=>`
+    <div class="tree-item" data-id="${n.id}" onclick="selectNodeById('${n.id}')">
+      <span class="tree-dot" style="background:${typeColors[n.type]||'#7090a8'};box-shadow:0 0 5px ${typeColors[n.type]||'#7090a8'};"></span>
+      <span>${n.label}</span>
+    </div>`).join('');
+}
+
+function selectNodeById(id,evt){
+  const topoNodes=typeof TOPOLOGIES[currentTopo].nodes==='function'?TOPOLOGIES[currentTopo].nodes():TOPOLOGIES[currentTopo].nodes;
+  const node=topoNodes.find(n=>n.id===id);
+  if(!node) return;
+  if(selectedNode) document.getElementById('node-'+selectedNode.id)?.classList.remove('selected');
+  selectedNode=node;
+  document.getElementById('node-'+id)?.classList.add('selected');
+  const topoEdges=typeof TOPOLOGIES[currentTopo].edges==='function'?TOPOLOGIES[currentTopo].edges():TOPOLOGIES[currentTopo].edges;
+  document.querySelectorAll('.net-edge').forEach(e=>e.classList.remove('highlight'));
+  topoEdges.forEach((e,i)=>{ if(e.from===id||e.to===id) document.getElementById('edge-'+i)?.classList.add('highlight'); });
+  document.querySelectorAll('.tree-item').forEach(t=>t.classList.remove('selected'));
+  document.querySelector(`.tree-item[data-id="${id}"]`)?.classList.add('selected');
+  renderNodeDetail(node,topoEdges,topoNodes);
+}
+
+function deselectNode(){
+  if(selectedNode) document.getElementById('node-'+selectedNode.id)?.classList.remove('selected');
+  selectedNode=null;
+  document.querySelectorAll('.net-edge').forEach(e=>e.classList.remove('highlight'));
+  document.getElementById('nodeDetailContent').innerHTML=`<div style="color:var(--text3);font-size:11px;text-align:center;padding:20px 0;font-family:var(--mono);">Click a node to inspect</div>`;
+}
+
+function renderNodeDetail(node,edges,nodes){
+  const c=typeColors[node.type]||'#7090a8';
+  const connected=edges.filter(e=>e.from===node.id||e.to===node.id);
+  const cpu=Math.floor(Math.random()*40)+10;
+  const util=Math.floor(Math.random()*60)+20;
+  document.getElementById('nodeDetailContent').innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+      <div class="node-detail-icon" style="color:${c};border-color:${c}33;">${{router:'⬡',switch:'⬢',firewall:'⚠',server:'▣',host:'●',hub:'◫',cloud:'☁'}[node.type]||'●'}</div>
+      <div><div class="node-detail-name">${node.label}</div><div class="node-detail-type">${node.type.toUpperCase()} · ${node.sub}</div></div>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-cell"><div class="detail-cell-label">STATUS</div><div class="detail-cell-val green">● ONLINE</div></div>
+      <div class="detail-cell"><div class="detail-cell-label">LINKS</div><div class="detail-cell-val accent">${connected.length}</div></div>
+      <div class="detail-cell"><div class="detail-cell-label">CPU</div><div class="detail-cell-val ${cpu>60?'amber':'green'}">${cpu}%</div></div>
+      <div class="detail-cell"><div class="detail-cell-label">UTIL</div><div class="detail-cell-val ${util>80?'red':util>60?'amber':'accent'}">${util}%</div></div>
+    </div>
+    <div style="margin-top:12px;font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--text3);margin-bottom:6px;">CONNECTED TO</div>
+    ${connected.map(e=>{const peer=nodes.find(n=>n.id===(e.from===node.id?e.to:e.from));return peer?`<div class="iface-row"><div class="tree-dot" style="background:${typeColors[peer.type]||'#7090a8'};"></div><div class="iface-name">${peer.label}</div><div class="iface-ip">${peer.sub}</div></div>`:''}).join('')}
+    <div style="margin-top:12px;"><div class="sparkline-label">Interface Utilization</div><canvas class="sparkline" id="nodeSpk"></canvas></div>`;
+  setTimeout(()=>{const c2=document.getElementById('nodeSpk');if(c2)drawSparkline(c2,genData(20,20,80),'#0cf');},10);
+}
+
+// Zoom/Pan
+function setupPanDrag(){
+  const svg=document.getElementById('networkSvg');
+  let drag=false,lx=0,ly=0;
+  svg.addEventListener('mousedown',e=>{if(e.target===svg||e.target.closest('#edgesGroup')||e.target.closest('#packetsGroup')){drag=true;lx=e.clientX;ly=e.clientY;}});
+  window.addEventListener('mousemove',e=>{if(!drag)return;svgPan.x+=e.clientX-lx;svgPan.y+=e.clientY-ly;lx=e.clientX;ly=e.clientY;applyTransform();});
+  window.addEventListener('mouseup',()=>drag=false);
+  svg.addEventListener('wheel',e=>{e.preventDefault();const d=e.deltaY<0?1.1:.9;svgZoom=Math.max(.3,Math.min(3,svgZoom*d));document.getElementById('zoomLabel').textContent=Math.round(svgZoom*100)+'%';applyTransform();},{passive:false});
+}
+function applyTransform(){document.getElementById('svgRoot').setAttribute('transform',`translate(${svgPan.x},${svgPan.y}) scale(${svgZoom})`);}
+function zoomCanvas(f){svgZoom=Math.max(.3,Math.min(3,svgZoom*f));document.getElementById('zoomLabel').textContent=Math.round(svgZoom*100)+'%';applyTransform();}
+function fitCanvas(){svgZoom=1;svgPan={x:0,y:0};document.getElementById('zoomLabel').textContent='100%';applyTransform();}
+function togglePacketFlow(){showPackets=!showPackets;document.getElementById('togglePackets').classList.toggle('active',showPackets);if(!showPackets){packetAnimFrames.forEach(id=>cancelAnimationFrame(id));packetAnimFrames=[];document.getElementById('packetsGroup').innerHTML='';}else{const t=TOPOLOGIES[currentTopo];const nodes=typeof t.nodes==='function'?t.nodes():t.nodes;const edges=typeof t.edges==='function'?t.edges():t.edges;startPacketFlow(nodes,edges);}}
+function toggleNodeLabels(){showLabels=!showLabels;document.getElementById('toggleLabels').classList.toggle('active',showLabels);document.querySelectorAll('.node-label,.node-sublabel').forEach(el=>el.style.display=showLabels?'':'none');}
+
+// CTX Menu
+function openCtxMenu(e,nodeId){e.preventDefault();currentCtxNode=nodeId;const m=document.getElementById('ctxMenu');m.style.display='block';m.style.left=e.clientX+'px';m.style.top=e.clientY+'px';}
+function ctxAction(a){document.getElementById('ctxMenu').style.display='none';if(a==='inspect'&&currentCtxNode)selectNodeById(currentCtxNode);if(a==='ping'&&currentCtxNode)addLog('info','ICMP','Ping sent to '+currentCtxNode);if(a==='trace'&&currentCtxNode)addLog('info','TRACE','Traceroute to '+currentCtxNode);}
+window.addEventListener('click',()=>document.getElementById('ctxMenu').style.display='none');
+
+// ═══════════════════════════════════════════════════════
+// TOPICS + DETAIL PANEL
+// ═══════════════════════════════════════════════════════
+function buildTopics(){
+  document.getElementById('topicsGrid').innerHTML=TOPICS.map(t=>`
+    <div class="topic-tile" style="--tlc:${t.color};" data-key="${t.key}" onclick="openTopicDetail('${t.key}',this)">
+      <div class="tile-header"><div class="tile-icon-box" style="color:${t.color};">${t.icon}</div><span class="tile-num">${t.num}</span></div>
+      <div class="tile-title">${t.title}</div>
+      <div class="tile-desc">${t.desc}</div>
+      <div class="tile-tags">${t.tags.map(g=>`<span class="tile-tag">${g}</span>`).join('')}</div>
+      <div class="tile-prog-bar"><div class="tile-prog-fill" style="width:${t.progress}%"></div></div>
+    </div>`).join('');
+}
+
+function openTopicDetail(key,tile){
+  document.querySelectorAll('.topic-tile').forEach(t=>t.classList.remove('selected'));
+  tile.classList.add('selected');
+  const topic=TOPICS.find(t=>t.key===key);
+  const detail=TOPIC_DETAILS[key];
+  if(!detail) return;
+  const panel=document.getElementById('topicDetailPanel');
+  panel.classList.remove('hidden');
+  document.getElementById('tdpTitle').textContent=topic.title;
+  document.getElementById('tdpSubtitle').textContent=detail.subtitle;
+  document.getElementById('tdpBody').innerHTML=detail.sections.map(s=>renderDetailSection(s,topic.color)).join('');
+  // Run any mini animations after render
+  setTimeout(()=>initDetailAnimations(key,topic.color),50);
+}
+
+function closeTopicDetail(){
+  document.getElementById('topicDetailPanel').classList.add('hidden');
+  document.querySelectorAll('.topic-tile').forEach(t=>t.classList.remove('selected'));
+}
+
+function renderDetailSection(s,color){
+  let html=`<div class="tdp-section"><div class="tdp-section-title">${s.title}</div>`;
+  if(s.type==='diagram'||s.type==='routing_anim'||s.type==='handshake_anim'||s.type==='dns_anim'||s.type==='security_anim'||s.type==='sdn_anim'||s.type==='topo_compare'||s.type==='osistack_mini'){
+    html+=`<div class="anim-canvas detail-svg-wrap" id="anim-${s.type}" style="height:160px;"></div>`;
+  } else if(s.type==='subnet_calc'){
+    html+=`<div style="background:var(--bg0);border:1px solid var(--border);border-radius:4px;padding:14px;">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:8px;">ENTER IP/PREFIX</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input id="subnetIP" value="192.168.1.0" style="flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:6px 10px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;">
+        <input id="subnetPfx" value="24" type="number" min="1" max="32" style="width:60px;background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:6px 10px;font-family:var(--mono);font-size:11px;color:var(--text);outline:none;">
+        <button onclick="calcSubnet()" style="background:rgba(0,204,255,.1);border:1px solid rgba(0,204,255,.3);border-radius:3px;padding:6px 14px;font-family:var(--mono);font-size:10px;color:var(--accent);cursor:pointer;">CALC</button>
+      </div>
+      <div id="subnetResult" style="font-family:var(--mono);font-size:10.5px;color:var(--text2);line-height:2;"></div>
+    </div>`;
+  } else if(s.type==='infocards'){
+    html+=`<div class="info-cards">${s.cards.map(c=>`<div class="info-card"><div class="ic-label">${c.label}</div><div class="ic-val ${c.cls}">${c.val}</div></div>`).join('')}</div>`;
+  } else if(s.type==='prosconsall'){
+    html+=s.items.map(item=>`
+      <div style="margin-bottom:10px;">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:.1em;margin-bottom:5px;">${item.name.toUpperCase()}</div>
+        <div class="pros-cons">
+          <div class="pc-block"><div class="pc-title p">▲ PROS</div>${item.pros.map(p=>`<div class="pc-item">${p}</div>`).join('')}</div>
+          <div class="pc-block"><div class="pc-title c">▼ CONS</div>${item.cons.map(c=>`<div class="pc-item">${c}</div>`).join('')}</div>
+        </div>
+      </div>`).join('');
+  } else if(s.type==='steps'){
+    html+=`<div class="step-flow">${s.steps.map((st,i)=>`<div class="step-item${i===0?' active':''}" onclick="activateStep(this)"><div class="step-num">${i+1}</div><div class="step-text">${st}</div></div>`).join('')}</div>`;
+  } else if(s.type==='info'){
+    html+=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:12px;font-size:11.5px;color:var(--text2);line-height:1.8;white-space:pre-line;font-family:var(--mono);">${s.text}</div>`;
+  }
+  return html+'</div>';
+}
+
+function activateStep(el){el.parentElement.querySelectorAll('.step-item').forEach(s=>s.classList.remove('active'));el.classList.add('active');}
+
+function initDetailAnimations(key,color){
+  // Handshake animation (TCP)
+  const handshake=document.getElementById('anim-handshake_anim');
+  if(handshake) drawHandshake(handshake,color);
+  // DNS flow
+  const dns=document.getElementById('anim-dns_anim');
+  if(dns) drawDNSFlow(dns,color);
+  // Routing
+  const routing=document.getElementById('anim-routing_anim');
+  if(routing) drawRoutingAnim(routing,color);
+  // Topo compare
+  const topoComp=document.getElementById('anim-topo_compare');
+  if(topoComp) drawTopoCompare(topoComp);
+  // OSI stack mini
+  const osiMini=document.getElementById('anim-osistack_mini');
+  if(osiMini) drawOSIMini(osiMini);
+  // Security
+  const sec=document.getElementById('anim-security_anim');
+  if(sec) drawSecurityAnim(sec,color);
+  // SDN
+  const sdn=document.getElementById('anim-sdn_anim');
+  if(sdn) drawSDNAnim(sdn,color);
+  // Subnet calc init
+  const sr=document.getElementById('subnetResult');
+  if(sr) calcSubnet();
+}
+
+function drawHandshake(container,color){
+  container.innerHTML=`<svg viewBox="0 0 440 160" style="width:100%;height:160px;">
+    <text x="80" y="20" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#7090a8">CLIENT</text>
+    <text x="360" y="20" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="#7090a8">SERVER</text>
+    <line x1="80" y1="25" x2="80" y2="155" stroke="#1e3045" stroke-width="1.5"/>
+    <line x1="360" y1="25" x2="360" y2="155" stroke="#1e3045" stroke-width="1.5"/>
+    <!-- SYN -->
+    <line x1="80" y1="50" x2="360" y2="70" stroke="${color}" stroke-width="1.5" stroke-dasharray="0"/>
+    <polygon points="355,67 365,72 357,76" fill="${color}"/>
+    <text x="215" y="54" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="${color}">SYN (seq=x)</text>
+    <!-- SYN-ACK -->
+    <line x1="360" y1="85" x2="80" y2="105" stroke="#0f9" stroke-width="1.5"/>
+    <polygon points="85,102 75,107 83,111" fill="#0f9"/>
+    <text x="215" y="95" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#0f9">SYN-ACK (seq=y,ack=x+1)</text>
+    <!-- ACK -->
+    <line x1="80" y1="118" x2="360" y2="138" stroke="${color}" stroke-width="1.5"/>
+    <polygon points="355,135 365,140 357,144" fill="${color}"/>
+    <text x="215" y="122" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="${color}">ACK (ack=y+1)</text>
+    <text x="215" y="155" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#0f9">CONNECTION ESTABLISHED</text>
+    <circle cx="80" cy="50" r="4" fill="${color}"><animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/></circle>
+    <circle cx="360" cy="138" r="4" fill="${color}"><animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/></circle>
+  </svg>`;
+}
+
+function drawDNSFlow(container,color){
+  container.innerHTML=`<svg viewBox="0 0 440 160" style="width:100%;height:160px;">
+    ${['CLIENT','RESOLVER','ROOT','TLD','.COM NS'].map((l,i)=>`
+      <text x="${40+i*90}" y="15" text-anchor="middle" font-family="IBM Plex Mono" font-size="8.5" fill="#3d5870">${l}</text>
+      <line x1="${40+i*90}" y1="18" x2="${40+i*90}" y2="155" stroke="#1e3045" stroke-width="1"/>`).join('')}
+    ${[
+      [40,130,35,'→ Query: example.com','#0cf',30],
+      [130,220,50,'→ Root query','#7090a8',50],
+      [220,130,70,'← .com NS addr','#0f9',70],
+      [130,310,90,'→ TLD query','#7090a8',90],
+      [310,130,110,'← Auth NS addr','#0f9',110],
+      [130,40,130,'← A: 93.184.216.34','#0cf',130],
+    ].map(([x1,x2,y,label,col,ly])=>`
+      <line x1="${x1}" y1="${y}" x2="${x2}" y2="${y+8}" stroke="${col}" stroke-width="1.2"/>
+      <polygon points="${x2>x1?x2-4:x2+4},${y+5} ${x2>x1?x2+4:x2-4},${y+8} ${x2>x1?x2-4:x2+4},${y+11}" fill="${col}"/>
+      <text x="${(x1+x2)/2}" y="${y-2}" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="${col}">${label}</text>`).join('')}
+  </svg>`;
+}
+
+function drawRoutingAnim(container,color){
+  const nodes=[{x:80,y:80},{x:200,y:40},{x:200,y:120},{x:320,y:80},{x:360,y:40},{x:360,y:130}];
+  const edges=[[0,1,4],[0,2,7],[1,3,2],[2,3,1],[3,4,3],[3,5,5],[1,2,6]];
+  const visited=[0,2,3,4];
+  container.innerHTML=`<svg viewBox="0 0 440 160" style="width:100%;height:160px;">
+    ${edges.map(([a,b,w])=>`<line x1="${nodes[a].x}" y1="${nodes[a].y}" x2="${nodes[b].x}" y2="${nodes[b].y}" stroke="${visited.includes(a)&&visited.includes(b)?color+'80':'#1e3045'}" stroke-width="${visited.includes(a)&&visited.includes(b)?2:1}"/><text x="${(nodes[a].x+nodes[b].x)/2}" y="${(nodes[a].y+nodes[b].y)/2-3}" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#3d5870">${w}</text>`).join('')}
+    ${nodes.map((n,i)=>`<circle cx="${n.x}" cy="${n.y}" r="14" fill="${visited.includes(i)?'rgba(0,204,255,0.15)':'var(--bg3)'}" stroke="${visited.includes(i)?color:'#1e3045'}" stroke-width="1.5"/><text x="${n.x}" y="${n.y+4}" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="${visited.includes(i)?color:'#3d5870'}">R${i+1}</text>`).join('')}
+    <text x="220" y="152" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#0f9">Shortest path: R1→R3→R4→R5 (cost=7)</text>
+    <circle cx="${nodes[0].x}" cy="${nodes[0].y}" r="4" fill="${color}" opacity="0.9"><animateMotion dur="3s" repeatCount="indefinite" path="M0,0 L120,40 L240,0 L280,-40"/><animate attributeName="opacity" values="0;1;0" dur="3s" repeatCount="indefinite"/></circle>
+  </svg>`;
+}
+
+function drawTopoCompare(container){
+  container.innerHTML=`<svg viewBox="0 0 440 160" style="width:100%;height:160px;">
+    <!-- Star -->
+    <text x="55" y="14" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#0cf">STAR</text>
+    ${[0,1,2,3,4].map(i=>{const a=(i/5)*2*Math.PI,r=30,cx=55,cy=90;return `<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(a)}" y2="${cy+r*Math.sin(a)}" stroke="#1e3045" stroke-width="1"/><circle cx="${cx+r*Math.cos(a)}" cy="${cy+r*Math.sin(a)}" r="5" fill="#ec4899" opacity=".8"/>`}).join('')}
+    <circle cx="55" cy="90" r="8" fill="#0cf" opacity=".8"/>
+    <!-- Ring -->
+    <text x="165" y="14" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#f90">RING</text>
+    ${[0,1,2,3,4,5].map(i=>{const a=(i/6)*2*Math.PI,r=32,cx=165,cy=90,nx=cx+r*Math.cos(a+Math.PI/6),ny=cy+r*Math.sin(a+Math.PI/6);const na=(( i+1)/6)*2*Math.PI,nx2=cx+r*Math.cos(na+Math.PI/6),ny2=cy+r*Math.sin(na+Math.PI/6);return `<line x1="${nx}" y1="${ny}" x2="${nx2}" y2="${ny2}" stroke="#1e3045" stroke-width="1"/><circle cx="${nx}" cy="${ny}" r="5" fill="#f90" opacity=".8"/>`}).join('')}
+    <!-- Mesh -->
+    <text x="285" y="14" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#0f9">MESH</text>
+    ${(()=>{const pts=[[285,65],[255,95],[275,125],[315,125],[335,95],[305,65]];const lines=[];for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++)lines.push(`<line x1="${pts[i][0]}" y1="${pts[i][1]}" x2="${pts[j][0]}" y2="${pts[j][1]}" stroke="#0f933" stroke-width="1" opacity=".5"/>`);const circles=pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#0f9" opacity=".8"/>`);return lines.join('')+circles.join('');})()}
+    <!-- Bus -->
+    <text x="395" y="14" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#a78bfa">BUS</text>
+    <line x1="370" y1="90" x2="420" y2="90" stroke="#a78bfa" stroke-width="2" opacity=".6"/>
+    ${[0,1,2,3].map(i=>`<line x1="${375+i*15}" y1="90" x2="${375+i*15}" y2="${i%2===0?65:115}" stroke="#1e3045" stroke-width="1"/><circle cx="${375+i*15}" cy="${i%2===0?60:120}" r="5" fill="#a78bfa" opacity=".8"/>`).join('')}
+  </svg>`;
+}
+
+function drawOSIMini(container){
+  const layers=[{n:7,c:'#0cf',l:'Application'},{n:6,c:'#a78bfa',l:'Presentation'},{n:5,c:'#ec4899',l:'Session'},{n:4,c:'#0f9',l:'Transport'},{n:3,c:'#0cf',l:'Network'},{n:2,c:'#f90',l:'Data Link'},{n:1,c:'#f34',l:'Physical'}];
+  container.innerHTML=`<svg viewBox="0 0 440 160" style="width:100%;height:160px;">
+    ${layers.map((l,i)=>`<rect x="100" y="${10+i*21}" width="240" height="19" rx="2" fill="${l.c}18" stroke="${l.c}" stroke-width="1" stroke-opacity=".4"/>
+    <text x="115" y="${23+i*21}" font-family="IBM Plex Mono" font-size="9" fill="${l.c}">${l.n}</text>
+    <text x="135" y="${23+i*21}" font-family="IBM Plex Mono" font-size="9" fill="#c9d8e8">${l.l}</text>
+    <text x="330" y="${23+i*21}" font-family="IBM Plex Mono" font-size="8" fill="${l.c}" opacity=".7">${['Data','Data','Data','Segment','Packet','Frame','Bits'][i]}</text>`).join('')}
+    <text x="40" y="90" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#3d5870">SENDER</text>
+    <text x="400" y="90" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#3d5870">RECEIVER</text>
+    <path d="M60 20 L60 155" stroke="#1e3045" stroke-width="1" stroke-dasharray="3 3"/>
+    <path d="M380 20 L380 155" stroke="#1e3045" stroke-width="1" stroke-dasharray="3 3"/>
+  </svg>`;
+}
+
+function drawSecurityAnim(container,color){
+  container.innerHTML=`<svg viewBox="0 0 440 160" style="width:100%;height:160px;">
+    <text x="40" y="15" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#7090a8">CLIENT</text>
+    <text x="220" y="15" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#f90">FIREWALL</text>
+    <text x="400" y="15" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#7090a8">SERVER</text>
+    <line x1="40" y1="18" x2="40" y2="155" stroke="#1e3045" stroke-width="1"/>
+    <line x1="220" y1="18" x2="220" y2="155" stroke="#f9033" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <line x1="400" y1="18" x2="400" y2="155" stroke="#1e3045" stroke-width="1"/>
+    <!-- TLS Hello -->
+    <line x1="40" y1="40" x2="220" y2="55" stroke="${color}" stroke-width="1.5"/>
+    <text x="125" y="44" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="${color}">Client Hello</text>
+    <!-- FW permit -->
+    <line x1="220" y1="60" x2="400" y2="75" stroke="#0f9" stroke-width="1.5"/>
+    <text x="310" y="64" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#0f9">→ PERMIT</text>
+    <!-- Server Hello -->
+    <line x1="400" y1="85" x2="220" y2="100" stroke="#a78bfa" stroke-width="1.5"/>
+    <text x="310" y="89" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#a78bfa">Server Hello + Cert</text>
+    <line x1="220" y1="105" x2="40" y2="120" stroke="#a78bfa" stroke-width="1.5"/>
+    <!-- Encrypted -->
+    <line x1="40" y1="130" x2="400" y2="140" stroke="#0f9" stroke-width="2"/>
+    <text x="220" y="128" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#0f9">🔒 ENCRYPTED DATA (AES-256-GCM)</text>
+    <!-- ACL block indicator -->
+    <text x="225" y="50" font-family="IBM Plex Mono" font-size="7" fill="#f90">ACL</text>
+    <rect x="212" y="53" width="16" height="100" fill="rgba(255,153,0,0.04)" stroke="rgba(255,153,0,0.15)" stroke-width="1"/>
+  </svg>`;
+}
+
+function drawSDNAnim(container,color){
+  container.innerHTML=`<svg viewBox="0 0 440 160" style="width:100%;height:160px;">
+    <!-- Controller -->
+    <rect x="160" y="10" width="120" height="32" rx="4" fill="rgba(0,204,255,0.1)" stroke="${color}" stroke-width="1.5"/>
+    <text x="220" y="28" text-anchor="middle" font-family="IBM Plex Mono" font-size="10" fill="${color}">SDN CONTROLLER</text>
+    <!-- Switches -->
+    ${[60,160,260,360].map((x,i)=>`
+      <rect x="${x-25}" y="100" width="50" height="24" rx="3" fill="rgba(0,255,153,0.08)" stroke="#0f9" stroke-width="1"/>
+      <text x="${x}" y="116" text-anchor="middle" font-family="IBM Plex Mono" font-size="8.5" fill="#0f9">SW-0${i+1}</text>
+      <line x1="${x}" y1="44" x2="${x}" y2="100" stroke="#1e3045" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="${(220+x)/2}" y="${i%2===0?68:75}" text-anchor="middle" font-family="IBM Plex Mono" font-size="7.5" fill="#3d5870">OpenFlow</text>`).join('')}
+    <!-- Data plane links -->
+    <line x1="85" y1="112" x2="135" y2="112" stroke="#1e3045" stroke-width="1"/>
+    <line x1="185" y1="112" x2="235" y2="112" stroke="#1e3045" stroke-width="1"/>
+    <line x1="285" y1="112" x2="335" y2="112" stroke="#1e3045" stroke-width="1"/>
+    <!-- Packet-In animation -->
+    <circle r="3" fill="${color}" opacity=".9">
+      <animateMotion dur="2s" repeatCount="indefinite" path="M60,100 L220,42"/>
+      <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <!-- Flow-Mod animation -->
+    <circle r="3" fill="#0f9" opacity=".9">
+      <animateMotion dur="2s" begin="1s" repeatCount="indefinite" path="M220,42 L60,100"/>
+      <animate attributeName="opacity" values="0;1;0" dur="2s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+    <text x="220" y="155" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="#3d5870">Control Plane (Centralized) | Data Plane (Distributed)</text>
+  </svg>`;
+}
+
+// Subnet Calculator
+function calcSubnet(){
+  const ip=document.getElementById('subnetIP')?.value||'192.168.1.0';
+  const pfx=parseInt(document.getElementById('subnetPfx')?.value||24);
+  const res=document.getElementById('subnetResult');
+  if(!res||pfx<1||pfx>32) return;
+  const hostBits=32-pfx;
+  const numHosts=Math.pow(2,hostBits)-2;
+  const mask=(0xFFFFFFFF<<hostBits)>>>0;
+  const m=[(mask>>>24)&255,(mask>>>16)&255,(mask>>>8)&255,mask&255];
+  const parts=ip.split('.').map(Number);
+  const nw=parts.map((p,i)=>p&m[i]);
+  const bc=nw.map((p,i)=>p|(~m[i]&255));
+  const first=nw.map((p,i)=>i===3?p+1:p);
+  const last=bc.map((p,i)=>i===3?p-1:p);
+  res.innerHTML=`<span style="color:var(--text3)">Network     </span><span style="color:var(--accent)">${nw.join('.')}/${pfx}</span>\n<span style="color:var(--text3)">Subnet Mask </span><span style="color:var(--text)">${m.join('.')}</span>\n<span style="color:var(--text3)">First Host  </span><span style="color:var(--green)">${first.join('.')}</span>\n<span style="color:var(--text3)">Last Host   </span><span style="color:var(--green)">${last.join('.')}</span>\n<span style="color:var(--text3)">Broadcast   </span><span style="color:var(--amber)">${bc.join('.')}</span>\n<span style="color:var(--text3)">Total Hosts </span><span style="color:var(--purple)">${numHosts.toLocaleString()}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// OSI
+// ═══════════════════════════════════════════════════════
+const OSI_LAYERS=[
+  {num:7,name:'Application', lc:'#0cf',  pdu:'Data',   short:'Provides network services to end-user applications.',protocols:['HTTP/S','FTP','SMTP','SSH','DNS','SNMP'],table:[['Unit','Data (Message)'],['Device','Host/Application'],['Function','User-facing service']]},
+  {num:6,name:'Presentation',lc:'#a78bfa',pdu:'Data',  short:'Translates, encrypts, and compresses data formats.',protocols:['SSL/TLS','JPEG','MPEG','ASCII'],table:[['Unit','Data'],['Function','Translation/Encryption']]},
+  {num:5,name:'Session',     lc:'#ec4899',pdu:'Data',  short:'Manages sessions between applications: setup, coordination, teardown.',protocols:['NetBIOS','RPC','PPTP','NFS'],table:[['Unit','Data'],['Function','Session control']]},
+  {num:4,name:'Transport',   lc:'#0f9',  pdu:'Segment',short:'End-to-end comm with flow control and error recovery.',protocols:['TCP','UDP','SCTP','QUIC'],table:[['Unit','Segment/Datagram'],['Device','Firewall, LB']]},
+  {num:3,name:'Network',     lc:'#0cf',  pdu:'Packet', short:'Logical addressing and routing — best path selection.',protocols:['IPv4','IPv6','OSPF','BGP','ICMP'],table:[['Unit','Packet'],['Device','Router, L3 Switch']]},
+  {num:2,name:'Data Link',   lc:'#f90',  pdu:'Frame',  short:'Node-to-node transfer with MAC addressing and error detection.',protocols:['Ethernet','802.11','PPP','VLAN','STP'],table:[['Unit','Frame'],['Device','Switch, Bridge']]},
+  {num:1,name:'Physical',    lc:'#f34',  pdu:'Bit',    short:'Transmits raw bits over physical medium.',protocols:['Ethernet','DSL','USB','Fiber'],table:[['Unit','Bit'],['Device','Hub, NIC, Cable']]},
+];
+
+function buildOSI(){
+  document.getElementById('osiStack').innerHTML=OSI_LAYERS.map(l=>`
+    <div class="osi-layer-card" style="--lc:${l.lc};" onclick="expandOSI(this)">
+      <div class="layer-header">
+        <div class="layer-num">${l.num}</div>
+        <div><div class="layer-name">${l.name}</div><div class="layer-pdu">PDU: ${l.pdu}</div></div>
+        <div class="layer-desc-short">${l.short}</div>
+        <div class="layer-protos">${l.protocols.map(p=>`<span class="proto-chip">${p}</span>`).join('')}</div>
+      </div>
+      <div class="layer-expanded-content"><p>${l.short}</p><table>${l.table.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table></div>
+    </div>`).join('');
+}
+function expandOSI(el){const was=el.classList.contains('expanded');document.querySelectorAll('.osi-layer-card').forEach(c=>c.classList.remove('expanded'));if(!was)el.classList.add('expanded');}
+
+function buildEncapStack(){
+  document.getElementById('encapStack').innerHTML=[
+    {name:'Application Data',pdu:'Message',lc:'#0cf'},
+    {name:'Presentation',pdu:'Data',lc:'#a78bfa'},
+    {name:'Session',pdu:'Data',lc:'#ec4899'},
+    {name:'Transport Header',pdu:'Segment',lc:'#0f9'},
+    {name:'Network Header',pdu:'Packet',lc:'#0cf'},
+    {name:'Data Link Header',pdu:'Frame',lc:'#f90'},
+    {name:'Physical',pdu:'Bits 0101',lc:'#f34'},
+  ].map(i=>`<div class="encap-item" style="--lc:${i.lc};background:color-mix(in srgb,${i.lc} 5%,var(--bg3));"><span class="name">${i.name}</span><span class="pdu">${i.pdu}</span></div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// PROTOCOLS
+// ═══════════════════════════════════════════════════════
+const PROTOCOLS=[
+  {name:'HTTP',layer:'Application',port:'80',type:'TCP',desc:'HyperText Transfer Protocol — web data transfer'},
+  {name:'HTTPS',layer:'Application',port:'443',type:'TCP',desc:'Encrypted HTTP over TLS/SSL'},
+  {name:'DNS',layer:'Application',port:'53',type:'UDP/TCP',desc:'Domain Name System — name-to-IP resolution'},
+  {name:'DHCP',layer:'Application',port:'67/68',type:'UDP',desc:'Dynamic Host Configuration Protocol'},
+  {name:'SSH',layer:'Application',port:'22',type:'TCP',desc:'Secure Shell — encrypted remote access'},
+  {name:'FTP',layer:'Application',port:'21',type:'TCP',desc:'File Transfer Protocol'},
+  {name:'SMTP',layer:'Application',port:'25',type:'TCP',desc:'Simple Mail Transfer Protocol'},
+  {name:'SNMP',layer:'Application',port:'161',type:'UDP',desc:'Simple Network Management Protocol'},
+  {name:'TLS',layer:'Presentation',port:'—',type:'—',desc:'Transport Layer Security — encryption wrapper'},
+  {name:'TCP',layer:'Transport',port:'—',type:'—',desc:'Transmission Control Protocol — reliable, ordered delivery'},
+  {name:'UDP',layer:'Transport',port:'—',type:'—',desc:'User Datagram Protocol — fast, connectionless'},
+  {name:'QUIC',layer:'Transport',port:'443',type:'UDP',desc:'Quick UDP Internet Connections — HTTP/3'},
+  {name:'IPv4',layer:'Network',port:'—',type:'—',desc:'Internet Protocol v4 — 32-bit addressing'},
+  {name:'IPv6',layer:'Network',port:'—',type:'—',desc:'Internet Protocol v6 — 128-bit addressing'},
+  {name:'ICMP',layer:'Network',port:'—',type:'—',desc:'Internet Control Message Protocol — diagnostics'},
+  {name:'OSPF',layer:'Network',port:'—',type:'IP',desc:'Open Shortest Path First — link-state IGP'},
+  {name:'BGP',layer:'Network',port:'179',type:'TCP',desc:'Border Gateway Protocol — inter-AS routing'},
+  {name:'ARP',layer:'Data Link',port:'—',type:'—',desc:'Address Resolution Protocol — IP→MAC mapping'},
+  {name:'Ethernet',layer:'Data Link',port:'—',type:'—',desc:'IEEE 802.3 — wired LAN framing standard'},
+  {name:'802.11',layer:'Data Link',port:'—',type:'—',desc:'IEEE Wi-Fi standard — wireless LAN'},
+  {name:'STP',layer:'Data Link',port:'—',type:'—',desc:'Spanning Tree Protocol — loop prevention'},
+];
+
+function buildProtocols(){
+  const lc={'Application':'var(--accent)','Presentation':'var(--purple)','Session':'var(--pink)','Transport':'var(--green)','Network':'var(--accent)','Data Link':'var(--amber)','Physical':'var(--red)'};
+  document.getElementById('protoTableBody').innerHTML=PROTOCOLS.map(p=>`<tr><td><span class="proto-name">${p.name}</span></td><td><span class="proto-layer-tag" style="color:${lc[p.layer]||'var(--text3)'}">${p.layer}</span></td><td><span class="proto-port">${p.port}</span></td><td style="color:var(--text3)">${p.type}</td><td class="proto-desc">${p.desc}</td></tr>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// SPARKLINES
+// ═══════════════════════════════════════════════════════
+function genData(n,min,max){return Array.from({length:n},()=>min+Math.random()*(max-min));}
+function drawSparkline(canvas,data,color){
+  const ctx=canvas.getContext('2d'),W=canvas.offsetWidth||240,H=canvas.offsetHeight||32;
+  canvas.width=W*devicePixelRatio;canvas.height=H*devicePixelRatio;ctx.scale(devicePixelRatio,devicePixelRatio);
+  ctx.clearRect(0,0,W,H);
+  const mn=Math.min(...data),mx=Math.max(...data),range=mx-mn||1;
+  const pts=data.map((v,i)=>[i*(W/(data.length-1)),H-((v-mn)/range)*(H-4)-2]);
+  ctx.beginPath();ctx.moveTo(pts[0][0],H);pts.forEach(([x,y])=>ctx.lineTo(x,y));ctx.lineTo(pts[pts.length-1][0],H);ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,color+'44');g.addColorStop(1,color+'00');ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();pts.forEach(([x,y],i)=>i===0?ctx.moveTo(x,y):ctx.lineTo(x,y));ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.stroke();
+  ctx.beginPath();ctx.arc(pts[pts.length-1][0],pts[pts.length-1][1],2.5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+}
+
+let bwData=genData(30,200,900),ppsData=genData(30,800,2000);
+function startSparklines(){
+  const bwC=document.getElementById('bwSparkline'),ppsC=document.getElementById('ppsSparkline');
+  const update=()=>{
+    bwData.push(200+Math.random()*700);bwData=bwData.slice(-30);
+    ppsData.push(800+Math.random()*1400);ppsData=ppsData.slice(-30);
+    if(bwC&&bwC.offsetWidth)drawSparkline(bwC,bwData,'#0cf');
+    if(ppsC&&ppsC.offsetWidth)drawSparkline(ppsC,ppsData,'#0f9');
+  };
+  update();setInterval(update,1500);
+}
+
+// ═══════════════════════════════════════════════════════
+// EVENT LOG
+// ═══════════════════════════════════════════════════════
+const LOG_EVENTS=[
+  ['ok','TCP','Connection established 10.0.0.1→10.0.0.5:443'],
+  ['info','ARP','Request broadcast 10.0.0.0/24'],
+  ['ok','DNS','Query resolved: api.example.com → 93.184.216.34'],
+  ['warn','OSPF','Neighbor DOWN on R-EDGE1 Gi0/1'],
+  ['info','DHCP','Lease granted 10.0.1.20 to HOST-01'],
+  ['err','PKT','Loss 2.1% on R-EDGE1→R-EDGE2 link'],
+  ['ok','BGP','UPDATE received from AS65001'],
+  ['info','ICMP','Echo request 10.0.0.1→10.0.0.2 (2.1ms)'],
+  ['warn','STP','Topology change on SW-02'],
+  ['info','TLS','1.3 handshake complete AES-256-GCM'],
+];
+
+function addLog(type,cat,msg){
+  const log=document.getElementById('eventLog');if(!log)return;
+  const n=new Date(),s=v=>String(v).padStart(2,'0');
+  const t=`${s(n.getHours())}:${s(n.getMinutes())}:${s(n.getSeconds())}`;
+  const row=document.createElement('div');
+  row.className='log-entry new';
+  row.innerHTML=`<span class="log-time">${t}</span><span class="log-type ${type}">${cat}</span><span class="log-msg">${msg}</span>`;
+  log.prepend(row);
+  while(log.children.length>20)log.removeChild(log.lastChild);
+}
+
+function startEventLog(){
+  LOG_EVENTS.forEach((e,i)=>setTimeout(()=>addLog(e[0],e[1],e[2]),i*220));
+  setInterval(()=>{const e=LOG_EVENTS[Math.floor(Math.random()*LOG_EVENTS.length)];addLog(e[0],e[1],e[2]);},3000+Math.random()*1200);
+}
+
+function startLiveStats(){
+  setInterval(()=>{
+    document.getElementById('sc-pps').textContent=(1200+Math.floor(Math.random()*900)).toLocaleString();
+    document.getElementById('sc-lat').textContent=(1+Math.random()*4).toFixed(1)+'ms';
+  },1800);
+}
+</script>
+</body>
+</html>

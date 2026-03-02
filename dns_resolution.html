@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNS Resolution - Interactive Visualization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #4a90e2;
+            --dark-blue: #2c3e50;
+            --bg-dark: #1a1d29;
+            --bg-card: #252936;
+            --text-primary: #ffffff;
+            --text-secondary: #a8b2d1;
+            --accent-cyan: #64ffda;
+            --accent-green: #80cbc4;
+            --accent-orange: #ffab91;
+            --accent-purple: #c792ea;
+            --border-light: rgba(100, 255, 218, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1d29 0%, #2c3e50 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(100, 255, 218, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 255, 218, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(100, 255, 218, 0.1);
+            border: 2px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-bottom: 2rem;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+            transform: translateX(-5px);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .domain-input-section {
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            text-align: center;
+        }
+
+        .domain-input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .domain-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--border-light);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Fira Code', monospace;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .domain-input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(100, 255, 218, 0.2);
+        }
+
+        button {
+            padding: 1rem 2rem;
+            background: rgba(74, 144, 226, 0.15);
+            border: 2px solid var(--primary-blue);
+            color: var(--primary-blue);
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--primary-blue);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .quick-examples {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .example-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(100, 255, 218, 0.1);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            font-size: 0.85rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .example-btn:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+        }
+
+        .status-box {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(100, 255, 218, 0.05);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .status-phase {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            font-family: 'Fira Code', monospace;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-desc {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .viz-area {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 2rem;
+            min-height: 700px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        /* DNS Servers */
+        .dns-server {
+            position: absolute;
+            width: 120px;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(100, 255, 218, 0.1));
+            border: 2px solid var(--primary-blue);
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(74, 144, 226, 0.2);
+            transition: all 0.3s;
+            font-size: 0.85rem;
+            z-index: 10;
+        }
+
+        .dns-server.active {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 40px rgba(100, 255, 218, 0.6);
+            transform: scale(1.05);
+        }
+
+        .server-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .server-label {
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-bottom: 0.25rem;
+        }
+
+        .server-sublabel {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Positions */
+        .client { top: 50%; left: 5%; transform: translateY(-50%); border-color: var(--accent-green); }
+        .local-dns { top: 50%; left: 25%; transform: translateY(-50%); }
+        .root-dns { top: 15%; right: 35%; }
+        .tld-dns { top: 50%; right: 35%; transform: translateY(-50%); }
+        .auth-dns { bottom: 15%; right: 35%; }
+
+        /* Packet */
+        .dns-packet {
+            position: absolute;
+            width: 180px;
+            background: var(--bg-dark);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 8px;
+            padding: 0;
+            font-family: 'Fira Code', monospace;
+            box-shadow: 0 8px 30px rgba(100, 255, 218, 0.5);
+            z-index: 100;
+            opacity: 0;
+        }
+
+        .packet-header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-cyan));
+            padding: 0.5rem;
+            font-weight: 700;
+            font-size: 0.7rem;
+            text-align: center;
+            color: white;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .packet-body {
+            padding: 0.6rem;
+            font-size: 0.65rem;
+        }
+
+        .packet-field {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.2rem 0;
+            padding: 0.2rem;
+            background: rgba(100, 255, 218, 0.05);
+            border-radius: 3px;
+        }
+
+        .field-label {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .field-value {
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+        }
+
+        .packet-query {
+            background: rgba(128, 203, 196, 0.1);
+            border-top: 1px dashed var(--accent-green);
+            padding: 0.5rem;
+            color: var(--accent-green);
+            font-size: 0.65rem;
+            border-radius: 0 0 6px 6px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .packet-response {
+            background: rgba(255, 171, 145, 0.1);
+            border-top: 1px dashed var(--accent-orange);
+            padding: 0.5rem;
+            color: var(--accent-orange);
+            font-size: 0.7rem;
+            border-radius: 0 0 6px 6px;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Resolution Steps */
+        .resolution-steps {
+            margin-top: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .step {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            background: rgba(100, 255, 218, 0.05);
+            border-left: 3px solid var(--border-light);
+            border-radius: 6px;
+            opacity: 0.3;
+            transition: all 0.3s;
+        }
+
+        .step.active {
+            opacity: 1;
+            border-left-color: var(--accent-cyan);
+            background: rgba(100, 255, 218, 0.1);
+        }
+
+        .step-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            font-family: 'Fira Code', monospace;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-title {
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .step-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Info Panel */
+        .info-panel {
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 10px 30px rgba(100, 255, 218, 0.15);
+        }
+
+        .info-title {
+            color: var(--accent-cyan);
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .info-content {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .dns-server { width: 90px; padding: 0.8rem; font-size: 0.75rem; }
+            .server-icon { font-size: 1.5rem; }
+            .dns-packet { width: 150px; }
+            .client { left: 5%; }
+            .local-dns { left: 5%; top: 25%; }
+            .root-dns { right: 5%; top: 15%; }
+            .tld-dns { right: 5%; top: 50%; }
+            .auth-dns { right: 5%; bottom: 15%; }
+            .viz-area { min-height: 600px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <div class="container">
+        <a href="index.html" class="back-btn">← Back to Topics</a>
+        
+        <header>
+            <h1>DNS Resolution</h1>
+            <p class="subtitle">Domain Name to IP Address Translation Process</p>
+        </header>
+
+        <div class="domain-input-section">
+            <div class="domain-input-group">
+                <input type="text" class="domain-input" id="domainInput" placeholder="Enter domain name (e.g., google.com)" value="google.com">
+                <button onclick="startResolution()" id="resolveBtn">🔍 Resolve</button>
+            </div>
+            <div class="quick-examples">
+                <button class="example-btn" onclick="setDomain('google.com')">google.com</button>
+                <button class="example-btn" onclick="setDomain('github.com')">github.com</button>
+                <button class="example-btn" onclick="setDomain('youtube.com')">youtube.com</button>
+            </div>
+        </div>
+
+        <div class="status-box">
+            <div class="status-phase" id="statusPhase">READY</div>
+            <div class="status-desc" id="statusDesc">Enter a domain name and click "Resolve" to begin DNS resolution</div>
+        </div>
+
+        <div class="viz-area" id="vizArea">
+            <canvas id="dnsCanvas"></canvas>
+
+            <div class="dns-server client">
+                <div class="server-icon">💻</div>
+                <div class="server-label">CLIENT</div>
+                <div class="server-sublabel">Your Device</div>
+            </div>
+
+            <div class="dns-server local-dns">
+                <div class="server-icon">🌐</div>
+                <div class="server-label">LOCAL DNS</div>
+                <div class="server-sublabel">ISP Resolver</div>
+            </div>
+
+            <div class="dns-server root-dns">
+                <div class="server-icon">🌍</div>
+                <div class="server-label">ROOT DNS</div>
+                <div class="server-sublabel">.root</div>
+            </div>
+
+            <div class="dns-server tld-dns">
+                <div class="server-icon">🌐</div>
+                <div class="server-label">TLD DNS</div>
+                <div class="server-sublabel">.com Server</div>
+            </div>
+
+            <div class="dns-server auth-dns">
+                <div class="server-icon">🎯</div>
+                <div class="server-label">AUTH DNS</div>
+                <div class="server-sublabel">google.com</div>
+            </div>
+        </div>
+
+        <div class="resolution-steps">
+            <div class="step" id="step1">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <div class="step-title">Client Query</div>
+                    <div class="step-desc">User requests domain → Local DNS Resolver</div>
+                </div>
+            </div>
+            <div class="step" id="step2">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <div class="step-title">Root DNS Query</div>
+                    <div class="step-desc">Local DNS → Root Server: "Where is .com?"</div>
+                </div>
+            </div>
+            <div class="step" id="step3">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <div class="step-title">TLD DNS Query</div>
+                    <div class="step-desc">Local DNS → TLD Server: "Where is google.com?"</div>
+                </div>
+            </div>
+            <div class="step" id="step4">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <div class="step-title">Authoritative Query</div>
+                    <div class="step-desc">Local DNS → Auth Server: "What's the IP?"</div>
+                </div>
+            </div>
+            <div class="step" id="step5">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <div class="step-title">Response to Client</div>
+                    <div class="step-desc">Local DNS returns IP address to client</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <div class="info-card">
+                <div class="info-title">🌐 What is DNS?</div>
+                <div class="info-content">
+                    DNS (Domain Name System) is the internet's phonebook. It translates human-readable domain names like <strong>google.com</strong> to machine-readable IP addresses like <strong>142.250.190.46</strong>.
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-title">🔄 Recursive Resolution</div>
+                <div class="info-content">
+                    Your local DNS resolver performs <strong>recursive queries</strong> on your behalf, contacting multiple DNS servers in hierarchy until it finds the answer.
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-title">⚡ DNS Caching</div>
+                <div class="info-content">
+                    Results are cached at multiple levels (browser, OS, local DNS) to speed up future requests. Cache expires based on <strong>TTL (Time To Live)</strong> values.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('dnsCanvas');
+        const ctx = canvas.getContext('2d');
+        const vizArea = document.getElementById('vizArea');
+        let isResolving = false;
+
+        function resizeCanvas() {
+            canvas.width = vizArea.offsetWidth;
+            canvas.height = vizArea.offsetHeight;
+            drawConnections();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function getServerCenter(selector) {
+            const server = document.querySelector(selector);
+            const rect = server.getBoundingClientRect();
+            const vizRect = vizArea.getBoundingClientRect();
+            return {
+                x: rect.left + rect.width / 2 - vizRect.left,
+                y: rect.top + rect.height / 2 - vizRect.top
+            };
+        }
+
+        function drawConnections() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'rgba(100, 255, 218, 0.15)';
+            ctx.lineWidth = 2;
+
+            const connections = [
+                ['.client', '.local-dns'],
+                ['.local-dns', '.root-dns'],
+                ['.local-dns', '.tld-dns'],
+                ['.local-dns', '.auth-dns']
+            ];
+
+            connections.forEach(([from, to]) => {
+                const start = getServerCenter(from);
+                const end = getServerCenter(to);
+                ctx.beginPath();
+                ctx.moveTo(start.x, start.y);
+                ctx.lineTo(end.x, end.y);
+                ctx.stroke();
+            });
+        }
+
+        function updateStatus(phase, desc) {
+            document.getElementById('statusPhase').textContent = phase;
+            document.getElementById('statusDesc').textContent = desc;
+        }
+
+        function activateStep(stepNum) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById(`step${stepNum}`).classList.add('active');
+        }
+
+        function setDomain(domain) {
+            document.getElementById('domainInput').value = domain;
+        }
+
+        function createQueryPacket(query) {
+            const packet = document.createElement('div');
+            packet.className = 'dns-packet';
+            
+            packet.innerHTML = `
+                <div class="packet-header">DNS QUERY</div>
+                <div class="packet-body">
+                    <div class="packet-field">
+                        <span class="field-label">TYPE:</span>
+                        <span class="field-value">A</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">CLASS:</span>
+                        <span class="field-value">IN</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">ID:</span>
+                        <span class="field-value">${Math.floor(Math.random() * 65535)}</span>
+                    </div>
+                </div>
+                <div class="packet-query">QUERY: ${query}</div>
+            `;
+            
+            vizArea.appendChild(packet);
+            return packet;
+        }
+
+        function createResponsePacket(ip) {
+            const packet = document.createElement('div');
+            packet.className = 'dns-packet';
+            
+            packet.innerHTML = `
+                <div class="packet-header">DNS RESPONSE</div>
+                <div class="packet-body">
+                    <div class="packet-field">
+                        <span class="field-label">TYPE:</span>
+                        <span class="field-value">A</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">TTL:</span>
+                        <span class="field-value">300s</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">STATUS:</span>
+                        <span class="field-value">SUCCESS</span>
+                    </div>
+                </div>
+                <div class="packet-response">IP: ${ip}</div>
+            `;
+            
+            vizArea.appendChild(packet);
+            return packet;
+        }
+
+        async function animatePacket(packet, fromSelector, toSelector) {
+            const from = document.querySelector(fromSelector);
+            const to = document.querySelector(toSelector);
+            
+            const fromRect = from.getBoundingClientRect();
+            const toRect = to.getBoundingClientRect();
+            const vizRect = vizArea.getBoundingClientRect();
+            
+            const startX = fromRect.left + fromRect.width / 2 - vizRect.left - packet.offsetWidth / 2;
+            const startY = fromRect.top + fromRect.height / 2 - vizRect.top - packet.offsetHeight / 2;
+            const endX = toRect.left + toRect.width / 2 - vizRect.left - packet.offsetWidth / 2;
+            const endY = toRect.top + toRect.height / 2 - vizRect.top - packet.offsetHeight / 2;
+            
+            packet.style.left = startX + 'px';
+            packet.style.top = startY + 'px';
+            packet.style.opacity = '0';
+            
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            packet.style.transition = 'all 0.8s ease-in-out';
+            packet.style.opacity = '1';
+            packet.style.left = endX + 'px';
+            packet.style.top = endY + 'px';
+            
+            await new Promise(resolve => setTimeout(resolve, 800));
+            await new Promise(resolve => setTimeout(resolve, 400));
+            
+            packet.style.opacity = '0';
+            await new Promise(resolve => setTimeout(resolve, 300));
+            packet.remove();
+        }
+
+        async function startResolution() {
+            if (isResolving) return;
+            isResolving = true;
+            
+            const domain = document.getElementById('domainInput').value.trim() || 'google.com';
+            document.getElementById('resolveBtn').disabled = true;
+            
+            // Reset
+            document.querySelectorAll('.dns-server').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            
+            updateStatus('RESOLVING', `Performing DNS lookup for ${domain}...`);
+            
+            // Step 1: Client to Local DNS
+            activateStep(1);
+            document.querySelector('.client').classList.add('active');
+            const query1 = createQueryPacket(domain);
+            await animatePacket(query1, '.client', '.local-dns');
+            document.querySelector('.local-dns').classList.add('active');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Step 2: Local DNS to Root
+            activateStep(2);
+            const query2 = createQueryPacket(domain);
+            await animatePacket(query2, '.local-dns', '.root-dns');
+            document.querySelector('.root-dns').classList.add('active');
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            const response2 = createQueryPacket('.com TLD NS');
+            await animatePacket(response2, '.root-dns', '.local-dns');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Step 3: Local DNS to TLD
+            activateStep(3);
+            const query3 = createQueryPacket(domain);
+            await animatePacket(query3, '.local-dns', '.tld-dns');
+            document.querySelector('.tld-dns').classList.add('active');
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            const response3 = createQueryPacket(`${domain} NS`);
+            await animatePacket(response3, '.tld-dns', '.local-dns');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Step 4: Local DNS to Authoritative
+            activateStep(4);
+            const query4 = createQueryPacket(domain);
+            await animatePacket(query4, '.local-dns', '.auth-dns');
+            document.querySelector('.auth-dns').classList.add('active');
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            const fakeIP = `${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+            const response4 = createResponsePacket(fakeIP);
+            await animatePacket(response4, '.auth-dns', '.local-dns');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Step 5: Local DNS to Client
+            activateStep(5);
+            const finalResponse = createResponsePacket(fakeIP);
+            await animatePacket(finalResponse, '.local-dns', '.client');
+            
+            updateStatus('RESOLVED ✓', `${domain} → ${fakeIP}`);
+            
+            document.getElementById('resolveBtn').disabled = false;
+            isResolving = false;
+        }
+
+        // Initialize
+        drawConnections();
+    </script>
+</body>
+</html>

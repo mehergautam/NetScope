@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circuit Switching - Advanced Network Visualization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #4a90e2;
+            --dark-blue: #2c3e50;
+            --bg-dark: #1a1d29;
+            --bg-card: #252936;
+            --text-primary: #ffffff;
+            --text-secondary: #a8b2d1;
+            --accent-cyan: #64ffda;
+            --accent-green: #80cbc4;
+            --accent-orange: #ffab91;
+            --accent-red: #ef5350;
+            --accent-purple: #c792ea;
+            --border-light: rgba(100, 255, 218, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1d29 0%, #2c3e50 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(100, 255, 218, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 255, 218, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(100, 255, 218, 0.1);
+            border: 2px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-bottom: 2rem;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+            transform: translateX(-5px);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.875rem 2rem;
+            background: rgba(74, 144, 226, 0.15);
+            border: 2px solid var(--primary-blue);
+            color: var(--primary-blue);
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--primary-blue);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .status-box {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(100, 255, 218, 0.05);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .status-phase {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            font-family: 'Fira Code', monospace;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-desc {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .viz-area {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 2rem;
+            min-height: 700px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Nodes */
+        .node {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.2), rgba(100, 255, 218, 0.1));
+            border: 2px solid var(--primary-blue);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            box-shadow: 0 0 30px rgba(74, 144, 226, 0.2);
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        .node-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .node.sender {
+            top: 50%;
+            left: 3%;
+            transform: translateY(-50%);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 30px rgba(128, 203, 196, 0.4);
+        }
+
+        .node.receiver {
+            top: 50%;
+            right: 3%;
+            transform: translateY(-50%);
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 30px rgba(255, 171, 145, 0.4);
+        }
+
+        .node.router {
+            background: linear-gradient(135deg, rgba(199, 146, 234, 0.2), rgba(100, 255, 218, 0.2));
+            border-color: var(--accent-purple);
+        }
+
+        .node.active {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 40px rgba(100, 255, 218, 0.6);
+            animation: nodePulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes nodePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        /* Router Positions */
+        #router1 { top: 15%; left: 25%; }
+        #router2 { top: 15%; right: 25%; }
+        #router3 { top: 35%; left: 35%; }
+        #router4 { top: 35%; right: 35%; }
+        #router5 { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        #router6 { bottom: 35%; left: 35%; }
+        #router7 { bottom: 35%; right: 35%; }
+        #router8 { bottom: 15%; left: 50%; transform: translateX(-50%); }
+
+        /* Connection Lines */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Packet */
+        .packet {
+            position: absolute;
+            width: 150px;
+            background: var(--bg-dark);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 8px;
+            padding: 0;
+            font-family: 'Fira Code', monospace;
+            box-shadow: 0 8px 30px rgba(100, 255, 218, 0.5);
+            z-index: 100;
+            opacity: 0;
+        }
+
+        .packet-header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-cyan));
+            padding: 0.4rem;
+            font-weight: 700;
+            font-size: 0.65rem;
+            text-align: center;
+            color: white;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .packet-body {
+            padding: 0.6rem;
+            font-size: 0.65rem;
+        }
+
+        .packet-field {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.2rem 0;
+            padding: 0.2rem;
+            background: rgba(100, 255, 218, 0.05);
+            border-radius: 3px;
+        }
+
+        .field-label {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .field-value {
+            color: var(--text-secondary);
+        }
+
+        .packet-payload {
+            background: rgba(128, 203, 196, 0.1);
+            border-top: 1px dashed var(--accent-green);
+            padding: 0.4rem;
+            color: var(--accent-green);
+            font-size: 0.65rem;
+            border-radius: 0 0 6px 6px;
+            text-align: center;
+        }
+
+        /* Path Indicator */
+        .path-info {
+            position: absolute;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+            display: none;
+            z-index: 200;
+        }
+
+        .path-info.active {
+            display: block;
+        }
+
+        /* Info Cards */
+        .info-panel {
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 10px 30px rgba(100, 255, 218, 0.15);
+        }
+
+        .info-title {
+            color: var(--accent-cyan);
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        .info-content {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.7;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .node { width: 70px; height: 70px; font-size: 0.75rem; }
+            .packet { width: 130px; font-size: 0.6rem; }
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .node { width: 60px; height: 60px; font-size: 0.7rem; }
+            .node.sender { left: 5%; }
+            .node.receiver { right: 5%; }
+            .packet { width: 110px; }
+            .viz-area { min-height: 500px; }
+            .info-panel { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <div class="container">
+        <a href="index.html" class="back-btn">← Back to Topics</a>
+        
+        <header>
+            <h1>Circuit Switching</h1>
+            <p class="subtitle">Dedicated Path Establishment Through Network Nodes</p>
+        </header>
+
+        <div class="controls">
+            <button onclick="establishCircuit()" id="establishBtn">🔗 Establish Circuit</button>
+            <button onclick="sendData()" id="sendBtn" disabled>📤 Send Data</button>
+            <button onclick="teardownCircuit()" id="teardownBtn" disabled>🔌 Teardown</button>
+            <button onclick="reset()">🔄 Reset</button>
+        </div>
+
+        <div class="status-box">
+            <div class="status-phase" id="statusPhase">IDLE</div>
+            <div class="status-desc" id="statusDesc">Click "Establish Circuit" to setup dedicated path</div>
+        </div>
+
+        <div class="viz-area" id="vizArea">
+            <canvas id="networkCanvas"></canvas>
+            
+            <div class="path-info" id="pathInfo">PATH: Sender → R1 → R3 → R5 → R7 → Receiver</div>
+
+            <!-- Sender -->
+            <div class="node sender">
+                <div>SENDER</div>
+                <div class="node-label">192.168.1.10</div>
+            </div>
+
+            <!-- 8 Routers -->
+            <div class="node router" id="router1">
+                <div>R1</div>
+                <div class="node-label">Router</div>
+            </div>
+            <div class="node router" id="router2">
+                <div>R2</div>
+                <div class="node-label">Router</div>
+            </div>
+            <div class="node router" id="router3">
+                <div>R3</div>
+                <div class="node-label">Router</div>
+            </div>
+            <div class="node router" id="router4">
+                <div>R4</div>
+                <div class="node-label">Router</div>
+            </div>
+            <div class="node router" id="router5">
+                <div>R5</div>
+                <div class="node-label">Router</div>
+            </div>
+            <div class="node router" id="router6">
+                <div>R6</div>
+                <div class="node-label">Router</div>
+            </div>
+            <div class="node router" id="router7">
+                <div>R7</div>
+                <div class="node-label">Router</div>
+            </div>
+            <div class="node router" id="router8">
+                <div>R8</div>
+                <div class="node-label">Router</div>
+            </div>
+
+            <!-- Receiver -->
+            <div class="node receiver">
+                <div>RECEIVER</div>
+                <div class="node-label">192.168.2.50</div>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <div class="info-card">
+                <div class="info-title">🔗 Circuit Establishment</div>
+                <div class="info-content">
+                    Before data transfer, a <strong>dedicated physical path</strong> is established through network switches. Request packets traverse the network to find and reserve a route. Once established, this path is <strong>exclusive</strong> for this communication.
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-title">📊 Bandwidth Reservation</div>
+                <div class="info-content">
+                    The circuit reserves <strong>fixed bandwidth</strong> on each link in the path. This ensures <strong>constant quality</strong> but means unused bandwidth cannot be shared with other connections, leading to potential inefficiency.
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-title">⚡ Data Transfer</div>
+                <div class="info-content">
+                    Once established, data flows <strong>continuously</strong> through the dedicated path. No routing decisions needed per packet. Low latency and predictable performance, ideal for <strong>real-time voice communication</strong>.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('networkCanvas');
+        const ctx = canvas.getContext('2d');
+        const vizArea = document.getElementById('vizArea');
+        
+        let phase = 'idle';
+        let establishedPath = [];
+        let lineAnimations = [];
+
+        function resizeCanvas() {
+            canvas.width = vizArea.offsetWidth;
+            canvas.height = vizArea.offsetHeight;
+            drawAllConnections();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function getNodeCenter(selector) {
+            const node = document.querySelector(selector);
+            const rect = node.getBoundingClientRect();
+            const vizRect = vizArea.getBoundingClientRect();
+            return {
+                x: rect.left + rect.width / 2 - vizRect.left,
+                y: rect.top + rect.height / 2 - vizRect.top
+            };
+        }
+
+        function drawAllConnections() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // All possible connections (mesh network)
+            const connections = [
+                ['.sender', '#router1'], ['.sender', '#router3'], ['.sender', '#router6'],
+                ['#router1', '#router2'], ['#router1', '#router3'], ['#router1', '#router5'],
+                ['#router2', '#router4'], ['#router2', '#router5'],
+                ['#router3', '#router5'], ['#router3', '#router6'],
+                ['#router4', '#router5'], ['#router4', '#router7'], ['#router4', '.receiver'],
+                ['#router5', '#router7'], ['#router5', '#router8'],
+                ['#router6', '#router8'],
+                ['#router7', '.receiver'], ['#router8', '.receiver']
+            ];
+
+            ctx.strokeStyle = 'rgba(100, 255, 218, 0.15)';
+            ctx.lineWidth = 2;
+
+            connections.forEach(([from, to]) => {
+                const start = getNodeCenter(from);
+                const end = getNodeCenter(to);
+                ctx.beginPath();
+                ctx.moveTo(start.x, start.y);
+                ctx.lineTo(end.x, end.y);
+                ctx.stroke();
+            });
+        }
+
+        function drawActivePath(path, color = 'rgba(100, 255, 218, 0.8)', width = 4) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = color;
+
+            for (let i = 0; i < path.length - 1; i++) {
+                const start = getNodeCenter(path[i]);
+                const end = getNodeCenter(path[i + 1]);
+                ctx.beginPath();
+                ctx.moveTo(start.x, start.y);
+                ctx.lineTo(end.x, end.y);
+                ctx.stroke();
+            }
+
+            ctx.shadowBlur = 0;
+        }
+
+        function updateStatus(phaseName, description) {
+            document.getElementById('statusPhase').textContent = phaseName;
+            document.getElementById('statusDesc').textContent = description;
+        }
+
+        function updateButtons() {
+            document.getElementById('establishBtn').disabled = phase !== 'idle';
+            document.getElementById('sendBtn').disabled = phase !== 'established';
+            document.getElementById('teardownBtn').disabled = phase !== 'communicating' && phase !== 'established';
+        }
+
+        function createSetupPacket(type = 'SETUP') {
+            const packet = document.createElement('div');
+            packet.className = 'packet';
+            
+            packet.innerHTML = `
+                <div class="packet-header">${type} REQUEST</div>
+                <div class="packet-body">
+                    <div class="packet-field">
+                        <span class="field-label">SRC:</span>
+                        <span class="field-value">192.168.1.10</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">DST:</span>
+                        <span class="field-value">192.168.2.50</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">TYPE:</span>
+                        <span class="field-value">CIRCUIT_${type}</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">BW_REQ:</span>
+                        <span class="field-value">64 Kbps</span>
+                    </div>
+                </div>
+                <div class="packet-payload">Path Discovery Packet</div>
+            `;
+            
+            vizArea.appendChild(packet);
+            return packet;
+        }
+
+        function createDataPacket() {
+            const packet = document.createElement('div');
+            packet.className = 'packet';
+            
+            packet.innerHTML = `
+                <div class="packet-header">DATA PACKET</div>
+                <div class="packet-body">
+                    <div class="packet-field">
+                        <span class="field-label">SRC:</span>
+                        <span class="field-value">192.168.1.10</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">DST:</span>
+                        <span class="field-value">192.168.2.50</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">SEQ:</span>
+                        <span class="field-value">${Math.floor(Math.random() * 1000)}</span>
+                    </div>
+                    <div class="packet-field">
+                        <span class="field-label">CIRCUIT:</span>
+                        <span class="field-value">ESTABLISHED</span>
+                    </div>
+                </div>
+                <div class="packet-payload">PAYLOAD: "Hello World Data..."</div>
+            `;
+            
+            vizArea.appendChild(packet);
+            return packet;
+        }
+
+        async function animatePacket(packet, path) {
+            for (let i = 0; i < path.length; i++) {
+                const node = document.querySelector(path[i]);
+                const nodeRect = node.getBoundingClientRect();
+                const vizRect = vizArea.getBoundingClientRect();
+                
+                const targetX = nodeRect.left + nodeRect.width / 2 - vizRect.left - packet.offsetWidth / 2;
+                const targetY = nodeRect.top + nodeRect.height / 2 - vizRect.top - packet.offsetHeight / 2;
+                
+                packet.style.transition = 'all 0.8s ease-in-out';
+                packet.style.opacity = '1';
+                packet.style.left = targetX + 'px';
+                packet.style.top = targetY + 'px';
+                
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                if (i < path.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+            }
+            
+            packet.style.opacity = '0';
+            await new Promise(resolve => setTimeout(resolve, 300));
+            packet.remove();
+        }
+
+        async function establishCircuit() {
+            phase = 'establishing';
+            updateButtons();
+            updateStatus('ESTABLISHING', 'Sending SETUP packet to establish dedicated path...');
+
+            // Define path through network
+            establishedPath = ['.sender', '#router1', '#router3', '#router5', '#router7', '.receiver'];
+
+            // Send setup packet to establish path
+            const setupPacket = createSetupPacket('SETUP');
+            
+            // Animate packet traveling and establishing path node by node
+            for (let i = 0; i < establishedPath.length; i++) {
+                const node = document.querySelector(establishedPath[i]);
+                const nodeRect = node.getBoundingClientRect();
+                const vizRect = vizArea.getBoundingClientRect();
+                
+                const targetX = nodeRect.left + nodeRect.width / 2 - vizRect.left - setupPacket.offsetWidth / 2;
+                const targetY = nodeRect.top + nodeRect.height / 2 - vizRect.top - setupPacket.offsetHeight / 2;
+                
+                setupPacket.style.transition = 'all 0.8s ease-in-out';
+                setupPacket.style.opacity = '1';
+                setupPacket.style.left = targetX + 'px';
+                setupPacket.style.top = targetY + 'px';
+                
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                // Activate this node (path being established)
+                node.classList.add('active');
+                
+                // Draw path up to this point
+                drawAllConnections();
+                if (i > 0) {
+                    drawActivePath(establishedPath.slice(0, i + 1));
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 400));
+            }
+            
+            // Remove setup packet
+            setupPacket.style.opacity = '0';
+            await new Promise(resolve => setTimeout(resolve, 300));
+            setupPacket.remove();
+
+            // Show complete path
+            drawAllConnections();
+            drawActivePath(establishedPath);
+            document.getElementById('pathInfo').classList.add('active');
+
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            phase = 'established';
+            updateStatus('ESTABLISHED ✓', 'Circuit established! Dedicated path reserved. Bandwidth allocated. Click "Send Data" to transmit.');
+            updateButtons();
+        }
+
+        async function sendData() {
+            phase = 'communicating';
+            updateButtons();
+            updateStatus('COMMUNICATING', 'Sending data through dedicated circuit...');
+
+            const dataPacket = createDataPacket();
+            await animatePacket(dataPacket, establishedPath);
+
+            updateStatus('ESTABLISHED', 'Circuit still active. Ready for more data.');
+            phase = 'established';
+            updateButtons();
+        }
+
+        async function teardownCircuit() {
+            phase = 'teardown';
+            updateButtons();
+            updateStatus('TEARDOWN', 'Releasing circuit and freeing resources...');
+
+            // Send teardown packet
+            const teardownPacket = createSetupPacket('TEARDOWN');
+            await animatePacket(teardownPacket, establishedPath);
+
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Deactivate nodes
+            for (const nodeSelector of establishedPath) {
+                document.querySelector(nodeSelector).classList.remove('active');
+            }
+
+            document.getElementById('pathInfo').classList.remove('active');
+
+            // Redraw normal connections
+            drawAllConnections();
+
+            phase = 'idle';
+            updateStatus('IDLE', 'Circuit released. Resources available for other connections.');
+            updateButtons();
+            establishedPath = [];
+        }
+
+        function reset() {
+            document.querySelectorAll('.packet').forEach(p => p.remove());
+            document.querySelectorAll('.node').forEach(n => n.classList.remove('active'));
+            document.getElementById('pathInfo').classList.remove('active');
+            
+            drawAllConnections();
+            
+            phase = 'idle';
+            establishedPath = [];
+            updateStatus('IDLE', 'Click "Establish Circuit" to setup dedicated path');
+            updateButtons();
+        }
+
+        // Initialize
+        drawAllConnections();
+    </script>
+</body>
+</html>
