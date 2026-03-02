@@ -6,24 +6,19 @@
 <title>NetScope — Computer Networking Visualizer</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
 :root {
   --bg-dark: #0a0e1a;
   --bg-card: #141824;
   --bg-hover: #1a1f2e;
   --border: #1e293b;
-  --border-light: #2d3b52;
   --text: #e2e8f0;
   --text-dim: #94a3b8;
-  --text-muted: #64748b;
   --accent: #3b82f6;
-  --accent-hover: #2563eb;
   --cyan: #06b6d4;
   --green: #10b981;
-  --purple: #8b5cf6;
-  --orange: #f59e0b;
 }
-
-* { margin:0; padding:0; box-sizing:border-box; }
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -33,7 +28,6 @@ body {
   overflow-x: hidden;
 }
 
-/* ─── Background ─── */
 .hero-bg {
   position: fixed;
   inset: 0;
@@ -56,7 +50,6 @@ body {
   pointer-events: none;
 }
 
-/* ─── Navigation ─── */
 nav {
   position: sticky;
   top: 0;
@@ -145,31 +138,16 @@ nav {
   padding: 6px 16px !important;
   border-radius: 6px !important;
   font-weight: 700 !important;
-  position: relative;
-  overflow: hidden;
-}
-
-.pro-mode-link::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-  transform: translateX(-100%);
-  transition: transform 0.6s;
-}
-
-.pro-mode-link:hover::before {
-  transform: translateX(100%);
 }
 
 .pro-mode-link::after {
   display: none !important;
 }
 
-.mobile-menu {
+.mobile-menu-btn {
   display: none;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -178,17 +156,29 @@ nav {
   align-items: center;
   justify-content: center;
   gap: 4px;
+  padding: 8px;
 }
 
-.mobile-menu span {
-  width: 16px;
+.mobile-menu-btn span {
+  width: 20px;
   height: 2px;
   background: var(--text);
   border-radius: 1px;
   transition: all 0.3s;
 }
 
-/* ─── Hero Section ─── */
+.mobile-menu-btn.active span:nth-child(1) {
+  transform: rotate(45deg) translateY(7px);
+}
+
+.mobile-menu-btn.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-menu-btn.active span:nth-child(3) {
+  transform: rotate(-45deg) translateY(-7px);
+}
+
 .hero {
   position: relative;
   min-height: calc(100vh - 64px);
@@ -300,7 +290,7 @@ h1 {
 
 .btn-secondary {
   background: var(--bg-card);
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border);
   color: var(--text);
 }
 
@@ -320,6 +310,11 @@ h1 {
   text-align: center;
 }
 
+.stat-item a {
+  text-decoration: none;
+  color: inherit;
+}
+
 .stat-number {
   font-size: 2.5rem;
   font-weight: 800;
@@ -332,11 +327,10 @@ h1 {
 
 .stat-label {
   font-size: 13px;
-  color: var(--text-muted);
+  color: var(--text-dim);
   margin-top: 4px;
 }
 
-/* ─── Topics Grid ─── */
 .topics-section {
   position: relative;
   padding: 6rem 2rem;
@@ -431,7 +425,7 @@ h1 {
   width: 48px;
   height: 48px;
   background: var(--bg-hover);
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -450,7 +444,7 @@ h1 {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-dim);
   background: var(--bg-hover);
   padding: 4px 10px;
   border-radius: 6px;
@@ -494,7 +488,7 @@ h1 {
   background: var(--bg-hover);
   border: 1px solid var(--border);
   border-radius: 4px;
-  color: var(--text-muted);
+  color: var(--text-dim);
 }
 
 .topic-arrow {
@@ -511,7 +505,6 @@ h1 {
   gap: 10px;
 }
 
-/* ─── Footer ─── */
 footer {
   position: relative;
   padding: 4rem 2rem;
@@ -530,7 +523,7 @@ footer {
 }
 
 .footer-text {
-  color: var(--text-muted);
+  color: var(--text-dim);
   font-size: 14px;
 }
 
@@ -550,7 +543,6 @@ footer {
   color: var(--accent);
 }
 
-/* ─── Responsive ─── */
 @media (max-width: 768px) {
   nav {
     padding: 1rem 1.5rem;
@@ -558,9 +550,24 @@ footer {
 
   .nav-links {
     display: none;
+    position: fixed;
+    top: 65px;
+    left: 0;
+    right: 0;
+    background: rgba(20, 24, 36, 0.98);
+    backdrop-filter: blur(20px);
+    padding: 2rem;
+    flex-direction: column;
+    gap: 1.5rem;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   }
 
-  .mobile-menu {
+  .nav-links.active {
+    display: flex !important;
+  }
+
+  .mobile-menu-btn {
     display: flex;
   }
 
@@ -606,18 +613,10 @@ footer {
   }
 }
 
-@media (min-width: 769px) and (max-width: 1024px) {
-  .topics-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* ─── Smooth Scroll ─── */
 html {
   scroll-behavior: smooth;
 }
 
-/* ─── Selection ─── */
 ::selection {
   background: var(--accent);
   color: white;
@@ -629,25 +628,23 @@ html {
 <div class="hero-bg"></div>
 <div class="grid-bg"></div>
 
-<!-- Navigation -->
 <nav>
   <div class="logo">
     <div class="logo-icon">N</div>
     <span class="logo-text">NetScope</span>
   </div>
-  <ul class="nav-links">
+  <ul class="nav-links" id="navLinks">
     <li><a href="#topics">Topics</a></li>
     <li><a href="#about">About</a></li>
     <li><a href="dashboard.html" class="pro-mode-link">⚡ Pro Mode</a></li>
   </ul>
-  <div class="mobile-menu">
+  <div class="mobile-menu-btn" id="mobileMenuBtn">
     <span></span>
     <span></span>
     <span></span>
   </div>
 </nav>
 
-<!-- Hero Section -->
 <section class="hero">
   <div class="hero-content">
     <div class="hero-badge">
@@ -683,7 +680,7 @@ html {
         <div class="stat-label">Always Free</div>
       </div>
       <div class="stat-item">
-        <a href="dashboard.html" style="text-decoration: none; color: inherit;">
+        <a href="dashboard.html">
           <div class="stat-number" style="font-size: 1.5rem;">⚡ PRO</div>
           <div class="stat-label">Dashboard Mode</div>
         </a>
@@ -692,7 +689,6 @@ html {
   </div>
 </section>
 
-<!-- Topics Section -->
 <section class="topics-section" id="topics">
   <div class="section-header">
     <div class="section-label">Interactive Concepts</div>
@@ -704,7 +700,6 @@ html {
 
   <div class="topics-grid">
     
-    <!-- TCP Handshake -->
     <a href="tcp_handshake.html" class="topic-card" style="--tc: #3b82f6;">
       <div class="topic-header">
         <div class="topic-icon">🤝</div>
@@ -723,7 +718,6 @@ html {
       </div>
     </a>
 
-    <!-- DNS Resolution -->
     <a href="dns_resolution.html" class="topic-card" style="--tc: #06b6d4;">
       <div class="topic-header">
         <div class="topic-icon">🌐</div>
@@ -742,7 +736,6 @@ html {
       </div>
     </a>
 
-    <!-- ARP Protocol -->
     <a href="arp_protocol.html" class="topic-card" style="--tc: #10b981;">
       <div class="topic-header">
         <div class="topic-icon">🔍</div>
@@ -761,8 +754,7 @@ html {
       </div>
     </a>
 
-    <!-- Circuit Switching -->
-    <a href="circuit_switching.html" class="topic-card" style="--tc: #8b5cf6;">
+    <a href="circuit_switching_proper.html" class="topic-card" style="--tc: #8b5cf6;">
       <div class="topic-header">
         <div class="topic-icon">🔗</div>
         <div class="topic-number">04</div>
@@ -780,7 +772,6 @@ html {
       </div>
     </a>
 
-    <!-- Packet Switching -->
     <a href="packet_switching.html" class="topic-card" style="--tc: #f59e0b;">
       <div class="topic-header">
         <div class="topic-icon">📦</div>
@@ -799,7 +790,6 @@ html {
       </div>
     </a>
 
-    <!-- Congestion Control -->
     <a href="congestion_control.html" class="topic-card" style="--tc: #ec4899;">
       <div class="topic-header">
         <div class="topic-icon">🚦</div>
@@ -818,7 +808,6 @@ html {
       </div>
     </a>
 
-    <!-- IP Addressing -->
     <a href="ip_addressing_subnetting.html" class="topic-card" style="--tc: #06b6d4;">
       <div class="topic-header">
         <div class="topic-icon">🔢</div>
@@ -837,7 +826,6 @@ html {
       </div>
     </a>
 
-    <!-- OSI Model -->
     <a href="osi_model.html" class="topic-card" style="--tc: #3b82f6;">
       <div class="topic-header">
         <div class="topic-icon">📊</div>
@@ -855,26 +843,71 @@ html {
         <span class="topic-arrow">View →</span>
       </div>
     </a>
+    <a href="routing_algorithms.html" class="topic-card" style="--tc: #f97316;">
+  <div class="topic-header">
+    <div class="topic-icon">🗺️</div>
+    <div class="topic-number">09</div>
+  </div>
+  <h3 class="topic-title">Routing Algorithms</h3>
+  <p class="topic-description">
+    Visualize Dijkstra's and Bellman-Ford algorithms finding shortest paths across dynamic network topologies
+  </p>
+  <div class="topic-footer">
+    <div class="topic-tags">
+      <span class="topic-tag">Dijkstra</span>
+      <span class="topic-tag">BGP</span>
+    </div>
+    <span class="topic-arrow">View →</span>
+  </div>
+</a>
 
   </div>
 </section>
 
-<!-- Footer -->
 <footer id="about">
   <div class="footer-content">
     <div class="footer-text">
       © 2025 Meher Gautam. All rights reserved.
     </div>
     <div class="footer-links">
-      <a href="/cdn-cgi/l/email-protection#88efe9fdfce9e5e5ede0edfababfc8efe5e9e1e4a6ebe7e5">Contact</a>
-      <a href="#">GitHub</a>
+      <a href="mailto:gautammeher27@gmail.com">Contact</a>
+      <a href="https://github.com/mehergautam">GitHub</a>
       <a href="#">LinkedIn</a>
     </div>
   </div>
 </footer>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-// Smooth scroll for anchor links
+<script>
+// Mobile menu toggle
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const navLinks = document.getElementById('navLinks');
+
+mobileMenuBtn.addEventListener('click', () => {
+  mobileMenuBtn.classList.toggle('active');
+  navLinks.classList.toggle('active');
+});
+
+// Close menu when clicking a link
+document.querySelectorAll('.nav-links a').forEach(link => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth <= 768) {
+      mobileMenuBtn.classList.remove('active');
+      navLinks.classList.remove('active');
+    }
+  });
+});
+
+// Close menu when clicking outside
+document.addEventListener('click', (e) => {
+  if (!mobileMenuBtn.contains(e.target) && !navLinks.contains(e.target)) {
+    if (window.innerWidth <= 768) {
+      mobileMenuBtn.classList.remove('active');
+      navLinks.classList.remove('active');
+    }
+  }
+});
+
+// Smooth scroll
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   anchor.addEventListener('click', function (e) {
     e.preventDefault();
@@ -884,18 +917,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     }
   });
 });
+</script>
 
-// Mobile menu toggle
-const mobileMenu = document.querySelector('.mobile-menu');
-const navLinks = document.querySelector('.nav-links');
-
-mobileMenu?.addEventListener('click', () => {
-  navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
-  if (navLinks.style.display === 'flex') {
-    navLinks.style.position = 'absolute';
-    navLinks.style.top = '100%';
-    navLinks.style.left = '0';
-    navLinks.style.right = '0';
-    navLinks.style.background = 'var(--bg-card)';
-    navLinks.style.padding = '1rem';
-    navLinks.sty
+</body>
+</html>

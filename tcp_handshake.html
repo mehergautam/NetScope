@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TCP 3-Way Handshake - Interactive Animation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #4a90e2;
+            --dark-blue: #2c3e50;
+            --bg-dark: #1a1d29;
+            --bg-card: #252936;
+            --text-primary: #ffffff;
+            --text-secondary: #a8b2d1;
+            --accent-cyan: #64ffda;
+            --accent-green: #80cbc4;
+            --accent-purple: #c792ea;
+            --border-light: rgba(100, 255, 218, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1d29 0%, #2c3e50 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(100, 255, 218, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 255, 218, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(100, 255, 218, 0.1);
+            border: 2px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-bottom: 2rem;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+            transform: translateX(-5px);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .animation-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #animationCanvas {
+            width: 100%;
+            height: 500px;
+            position: relative;
+        }
+
+        .host {
+            position: absolute;
+            width: 120px;
+            text-align: center;
+        }
+
+        .host-left {
+            left: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .host-right {
+            right: 10%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .host-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-cyan));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin: 0 auto 1rem;
+            box-shadow: 0 10px 30px rgba(74, 144, 226, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .host-label {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .host-ip {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .packet {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.2), rgba(100, 255, 218, 0.05));
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 12px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(100, 255, 218, 0.3);
+            opacity: 0;
+            z-index: 10;
+        }
+
+        .packet-header {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(100, 255, 218, 0.3);
+        }
+
+        .packet-header span:first-child {
+            color: var(--text-secondary);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            background: var(--primary-blue);
+            border: none;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(74, 144, 226, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-display {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(100, 255, 218, 0.05);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .status-title {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'Fira Code', monospace;
+            color: var(--accent-cyan);
+        }
+
+        .info-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .info-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--accent-cyan);
+        }
+
+        .steps-list {
+            list-style: none;
+        }
+
+        .step-item {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: rgba(74, 144, 226, 0.1);
+            border-left: 4px solid var(--primary-blue);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .step-item:hover {
+            transform: translateX(10px);
+            background: rgba(74, 144, 226, 0.15);
+        }
+
+        .step-number {
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-right: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .animation-container { padding: 1.5rem; }
+            #animationCanvas { height: 400px; }
+            .host-icon { width: 60px; height: 60px; font-size: 2rem; }
+            .host { width: 100px; }
+            .packet { font-size: 0.8rem; padding: 0.75rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <div class="container">
+        <a href="index.html" class="back-btn">← Back to Topics</a>
+        
+        <header>
+            <h1>🤝 TCP 3-Way Handshake</h1>
+            <p class="subtitle">Interactive Connection Establishment Protocol</p>
+        </header>
+
+        <div class="animation-container">
+            <div id="animationCanvas">
+                <div class="host host-left">
+                    <div class="host-icon">💻</div>
+                    <div class="host-label">Client</div>
+                    <div class="host-ip">192.168.1.100</div>
+                </div>
+
+                <div class="host host-right">
+                    <div class="host-icon">🖥️</div>
+                    <div class="host-label">Server</div>
+                    <div class="host-ip">203.0.113.5</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" id="startBtn" onclick="startHandshake()">
+                    <span style="position: relative; z-index: 1;">▶ Start Handshake</span>
+                </button>
+                <button class="btn" id="resetBtn" onclick="resetAnimation()" disabled>
+                    <span style="position: relative; z-index: 1;">↺ Reset</span>
+                </button>
+            </div>
+
+            <div class="status-display">
+                <div class="status-title">Connection Status</div>
+                <div class="status-value" id="statusValue">READY</div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h2 class="info-title">How It Works</h2>
+            <ul class="steps-list">
+                <li class="step-item">
+                    <span class="step-number">Step 1 (SYN):</span>
+                    Client sends SYN packet with initial sequence number to server
+                </li>
+                <li class="step-item">
+                    <span class="step-number">Step 2 (SYN-ACK):</span>
+                    Server responds with SYN-ACK, acknowledging client's SYN and sending its own sequence number
+                </li>
+                <li class="step-item">
+                    <span class="step-number">Step 3 (ACK):</span>
+                    Client sends ACK to acknowledge server's SYN, completing the handshake
+                </li>
+                <li class="step-item">
+                    <span class="step-number">Result:</span>
+                    Connection is established and data transfer can begin
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let animating = false;
+        const canvas = document.getElementById('animationCanvas');
+        const statusValue = document.getElementById('statusValue');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        let currentPacket = null;
+        let seqNumber = Math.floor(Math.random() * 1000);
+        let ackNumber = Math.floor(Math.random() * 1000);
+
+        function createPacket(text, headers) {
+            const packet = document.createElement('div');
+            packet.className = 'packet';
+            packet.innerHTML = `
+                <div style="font-size: 1.1rem; margin-bottom: 0.5rem;">${text}</div>
+                <div class="packet-header">
+                    ${Object.entries(headers).map(([key, value]) => `
+                        <span>${key}:</span><span>${value}</span>
+                    `).join('')}
+                </div>
+            `;
+            canvas.appendChild(packet);
+            return packet;
+        }
+
+        function animatePacket(packet, fromLeft, duration) {
+            return new Promise(resolve => {
+                const startX = fromLeft ? '15%' : '85%';
+                const endX = fromLeft ? '85%' : '15%';
+                
+                packet.style.left = startX;
+                packet.style.opacity = '0';
+                
+                setTimeout(() => {
+                    packet.style.opacity = '1';
+                    packet.style.transition = `left ${duration}ms linear, opacity 300ms`;
+                    packet.style.left = endX;
+                }, 100);
+
+                setTimeout(() => {
+                    packet.style.opacity = '0';
+                    setTimeout(() => {
+                        packet.remove();
+                        resolve();
+                    }, 300);
+                }, duration + 100);
+            });
+        }
+
+        async function startHandshake() {
+            if (animating) return;
+            animating = true;
+            startBtn.disabled = true;
+            resetBtn.disabled = true;
+
+            // Step 1: SYN
+            statusValue.textContent = 'SENDING SYN...';
+            statusValue.style.color = '#f59e0b';
+            
+            const synPacket = createPacket('SYN', {
+                'SEQ': seqNumber,
+                'ACK': '-',
+                'FLAGS': 'SYN',
+                'Window': '65535'
+            });
+            await animatePacket(synPacket, true, 2000);
+            await new Promise(r => setTimeout(r, 500));
+
+            // Step 2: SYN-ACK
+            statusValue.textContent = 'RECEIVING SYN-ACK...';
+            const synAckPacket = createPacket('SYN-ACK', {
+                'SEQ': ackNumber,
+                'ACK': seqNumber + 1,
+                'FLAGS': 'SYN, ACK',
+                'Window': '65535'
+            });
+            await animatePacket(synAckPacket, false, 2000);
+            await new Promise(r => setTimeout(r, 500));
+
+            // Step 3: ACK
+            statusValue.textContent = 'SENDING ACK...';
+            const ackPacket = createPacket('ACK', {
+                'SEQ': seqNumber + 1,
+                'ACK': ackNumber + 1,
+                'FLAGS': 'ACK',
+                'Window': '65535'
+            });
+            await animatePacket(ackPacket, true, 2000);
+            await new Promise(r => setTimeout(r, 500));
+
+            // Connected!
+            statusValue.textContent = '✓ CONNECTED';
+            statusValue.style.color = '#10b981';
+            
+            animating = false;
+            resetBtn.disabled = false;
+        }
+
+        function resetAnimation() {
+            statusValue.textContent = 'READY';
+            statusValue.style.color = '#64ffda';
+            startBtn.disabled = false;
+            resetBtn.disabled = true;
+            seqNumber = Math.floor(Math.random() * 1000);
+            ackNumber = Math.floor(Math.random() * 1000);
+        }
+    </script>
+</body>
+</html>

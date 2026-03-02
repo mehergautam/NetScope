@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSI Model - Interactive Visualization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary-blue: #4a90e2;
+            --bg-dark: #1a1d29;
+            --bg-card: #252936;
+            --text-primary: #ffffff;
+            --text-secondary: #a8b2d1;
+            --accent-cyan: #64ffda;
+            --border-light: rgba(100, 255, 218, 0.1);
+            --l7: #ff6b6b;
+            --l6: #ff9f43;
+            --l5: #ffd32a;
+            --l4: #0be881;
+            --l3: #00d2d3;
+            --l2: #54a0ff;
+            --l1: #a29bfe;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1d29 0%, #2c3e50 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-grid {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image:
+                linear-gradient(rgba(100, 255, 218, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(100, 255, 218, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none; z-index: 0;
+        }
+
+        .container {
+            position: relative; z-index: 1;
+            max-width: 1400px; margin: 0 auto; padding: 2rem;
+        }
+
+        .back-btn {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(100, 255, 218, 0.1);
+            border: 2px solid var(--accent-cyan);
+            color: var(--accent-cyan); text-decoration: none;
+            border-radius: 8px; font-weight: 600;
+            transition: all 0.3s; margin-bottom: 2rem;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-cyan); color: var(--bg-dark);
+            transform: translateX(-5px);
+        }
+
+        header { text-align: center; margin-bottom: 2.5rem; }
+
+        h1 { font-size: 3rem; font-weight: 700; margin-bottom: 0.5rem; }
+
+        .subtitle { color: var(--text-secondary); font-size: 1.1rem; }
+
+        .controls {
+            display: flex; gap: 1rem; justify-content: center;
+            margin-bottom: 2rem; flex-wrap: wrap;
+        }
+
+        button {
+            padding: 0.875rem 2rem;
+            background: rgba(74, 144, 226, 0.15);
+            border: 2px solid var(--primary-blue);
+            color: var(--primary-blue);
+            font-family: 'Poppins', sans-serif; font-weight: 600;
+            font-size: 0.95rem; border-radius: 8px; cursor: pointer;
+            transition: all 0.3s ease; text-transform: uppercase;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--primary-blue); color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 144, 226, 0.3);
+        }
+
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .status-box {
+            text-align: center; padding: 1.5rem;
+            background: rgba(100, 255, 218, 0.05);
+            border: 1px solid var(--border-light);
+            border-radius: 12px; margin-bottom: 2rem;
+        }
+
+        .status-phase {
+            font-size: 1.8rem; font-weight: 700;
+            color: var(--accent-cyan);
+            font-family: 'Fira Code', monospace; margin-bottom: 0.5rem;
+        }
+
+        .status-desc { font-size: 1rem; color: var(--text-secondary); }
+
+        /* Main layout */
+        .viz-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 180px 1fr;
+            gap: 1.5rem; align-items: start; margin-bottom: 2rem;
+        }
+
+        .stack-title {
+            text-align: center; margin-bottom: 0.75rem;
+            font-size: 0.85rem; font-family: 'Fira Code', monospace;
+            text-transform: uppercase; letter-spacing: 2px;
+        }
+
+        .osi-stack { display: flex; flex-direction: column; gap: 5px; }
+
+        .layer-row {
+            display: flex; align-items: stretch;
+            border-radius: 10px; overflow: hidden;
+            border: 2px solid transparent;
+            cursor: pointer; transition: all 0.3s; position: relative;
+        }
+
+        .layer-row:hover { transform: scale(1.02); }
+
+        .layer-row.active {
+            border-color: white;
+            box-shadow: 0 0 25px rgba(255,255,255,0.25);
+            transform: scale(1.03);
+            animation: layerGlow 1.2s ease-in-out infinite;
+        }
+
+        @keyframes layerGlow {
+            0%,100% { box-shadow: 0 0 15px rgba(255,255,255,0.1); }
+            50% { box-shadow: 0 0 40px rgba(255,255,255,0.35); }
+        }
+
+        .layer-num {
+            width: 46px; display: flex; align-items: center;
+            justify-content: center; font-weight: 700;
+            font-size: 1.2rem; font-family: 'Fira Code', monospace;
+            flex-shrink: 0;
+        }
+
+        .layer-body {
+            flex: 1; padding: 0.8rem 1rem;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+
+        .layer-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.15rem; }
+
+        .layer-protocols {
+            font-size: 0.65rem; font-family: 'Fira Code', monospace; opacity: 0.7;
+        }
+
+        .layer-pdu {
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 0.75rem; font-size: 0.65rem;
+            font-family: 'Fira Code', monospace; font-weight: 600;
+            white-space: nowrap; opacity: 0.85; flex-shrink: 0;
+        }
+
+        /* Layer color themes */
+        .row-7 { background: rgba(255,107,107,0.12); }
+        .row-7 .layer-num { background: var(--l7); color: #1a1d29; }
+        .row-7 .layer-name { color: var(--l7); }
+        .row-7 .layer-pdu { color: var(--l7); }
+
+        .row-6 { background: rgba(255,159,67,0.12); }
+        .row-6 .layer-num { background: var(--l6); color: #1a1d29; }
+        .row-6 .layer-name { color: var(--l6); }
+        .row-6 .layer-pdu { color: var(--l6); }
+
+        .row-5 { background: rgba(255,211,42,0.12); }
+        .row-5 .layer-num { background: var(--l5); color: #1a1d29; }
+        .row-5 .layer-name { color: var(--l5); }
+        .row-5 .layer-pdu { color: var(--l5); }
+
+        .row-4 { background: rgba(11,232,129,0.12); }
+        .row-4 .layer-num { background: var(--l4); color: #1a1d29; }
+        .row-4 .layer-name { color: var(--l4); }
+        .row-4 .layer-pdu { color: var(--l4); }
+
+        .row-3 { background: rgba(0,210,211,0.12); }
+        .row-3 .layer-num { background: var(--l3); color: #1a1d29; }
+        .row-3 .layer-name { color: var(--l3); }
+        .row-3 .layer-pdu { color: var(--l3); }
+
+        .row-2 { background: rgba(84,160,255,0.12); }
+        .row-2 .layer-num { background: var(--l2); color: #1a1d29; }
+        .row-2 .layer-name { color: var(--l2); }
+        .row-2 .layer-pdu { color: var(--l2); }
+
+        .row-1 { background: rgba(162,155,254,0.12); }
+        .row-1 .layer-num { background: var(--l1); color: #1a1d29; }
+        .row-1 .layer-name { color: var(--l1); }
+        .row-1 .layer-pdu { color: var(--l1); }
+
+        /* Center channel */
+        .center-channel { display: flex; flex-direction: column; align-items: center; }
+
+        .channel-label {
+            font-size: 0.65rem; font-family: 'Fira Code', monospace;
+            color: var(--text-secondary); text-transform: uppercase;
+            letter-spacing: 1px; margin-bottom: 0.5rem; text-align: center;
+        }
+
+        .channel-area {
+            width: 100%; flex: 1;
+            background: rgba(100, 255, 218, 0.03);
+            border: 1px solid var(--border-light);
+            border-radius: 12px; position: relative;
+            overflow: hidden; min-height: 530px;
+        }
+
+        .traveling-packet {
+            position: absolute; left: 50%;
+            transform: translateX(-50%);
+            border-radius: 6px; padding: 5px 12px;
+            font-size: 0.65rem; font-family: 'Fira Code', monospace;
+            font-weight: 700; color: #1a1d29; white-space: nowrap;
+            transition: top 0.55s cubic-bezier(0.4,0,0.2,1), background 0.4s ease;
+            z-index: 10;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            display: none;
+        }
+
+        .physical-line {
+            position: absolute; bottom: 0; left: 10%; right: 10%;
+            height: 3px; background: var(--l1);
+            box-shadow: 0 0 12px var(--l1);
+            border-radius: 2px; opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        /* Encapsulation visual */
+        .encap-viz {
+            background: var(--bg-card); border: 1px solid var(--border-light);
+            border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;
+        }
+
+        .encap-title {
+            color: var(--accent-cyan); font-weight: 700; font-size: 1rem;
+            margin-bottom: 1.25rem; text-transform: uppercase;
+        }
+
+        .encap-layers {
+            display: flex; flex-direction: column; gap: 5px; align-items: center;
+        }
+
+        .encap-layer {
+            display: flex; align-items: center; border-radius: 6px;
+            overflow: hidden; font-family: 'Fira Code', monospace;
+            font-size: 0.7rem; font-weight: 600; height: 34px;
+            transition: all 0.5s ease; opacity: 0.15;
+        }
+
+        .encap-layer.visible { opacity: 1; }
+        .encap-layer.stripped { opacity: 0.2; text-decoration: line-through; }
+
+        .encap-header {
+            padding: 0 14px; height: 100%; display: flex;
+            align-items: center; white-space: nowrap; color: #1a1d29;
+        }
+
+        .encap-data {
+            padding: 0 20px; height: 100%; display: flex;
+            align-items: center; background: rgba(255,255,255,0.07);
+            color: var(--text-secondary); white-space: nowrap; flex: 1;
+        }
+
+        /* Detail panel */
+        .detail-panel {
+            background: var(--bg-card); border: 1px solid var(--border-light);
+            border-radius: 12px; padding: 1.75rem; margin-bottom: 2rem;
+            min-height: 190px; transition: all 0.3s;
+        }
+
+        .detail-title {
+            font-weight: 700; font-size: 1.15rem; margin-bottom: 0.75rem;
+        }
+
+        .detail-content {
+            color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7;
+        }
+
+        .detail-content strong { color: var(--text-primary); }
+
+        .detail-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 0.75rem; margin-top: 1rem;
+        }
+
+        .detail-item {
+            background: rgba(100,255,218,0.05);
+            border: 1px solid var(--border-light);
+            border-radius: 8px; padding: 0.65rem 0.9rem;
+        }
+
+        .detail-item-label {
+            font-size: 0.62rem; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.3rem;
+        }
+
+        .detail-item-value {
+            font-size: 0.85rem; font-family: 'Fira Code', monospace; font-weight: 600;
+        }
+
+        /* Info cards */
+        .algo-info {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem; margin-top: 2rem;
+        }
+
+        .info-card {
+            background: var(--bg-card); border: 1px solid var(--border-light);
+            border-radius: 12px; padding: 1.5rem; transition: all 0.3s;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px); border-color: var(--accent-cyan);
+            box-shadow: 0 10px 30px rgba(100, 255, 218, 0.15);
+        }
+
+        .info-title {
+            color: var(--accent-cyan); font-weight: 700; font-size: 1rem;
+            margin-bottom: 0.75rem; text-transform: uppercase;
+        }
+
+        .info-content {
+            color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7;
+        }
+
+        .info-content strong { color: var(--text-primary); }
+
+        @media (max-width: 900px) {
+            .viz-wrapper { grid-template-columns: 1fr; }
+            .channel-area { min-height: 80px; }
+            h1 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="bg-grid"></div>
+
+<div class="container">
+    <a href="index.html" class="back-btn">← Back to Topics</a>
+
+    <header>
+        <h1>OSI Model</h1>
+        <p class="subtitle">7 Layers of Network Communication — Encapsulation & Decapsulation Visualized</p>
+    </header>
+
+    <div class="controls">
+        <button onclick="startAnimation()" id="runBtn">▶ Animate Data Flow</button>
+        <button onclick="resetAll()">🔄 Reset</button>
+    </div>
+
+    <div class="status-box">
+        <div class="status-phase" id="statusPhase">READY</div>
+        <div class="status-desc" id="statusDesc">Click any layer to explore it, or press "Animate Data Flow" to watch encapsulation & decapsulation in action</div>
+    </div>
+
+    <div class="viz-wrapper">
+        <div>
+            <div class="stack-title" style="color: var(--accent-cyan);">📤 SENDER (Encapsulation)</div>
+            <div class="osi-stack" id="senderStack"></div>
+        </div>
+
+        <div class="center-channel">
+            <div class="channel-label">Medium</div>
+            <div class="channel-area" id="channelArea">
+                <div class="traveling-packet" id="travelPacket"></div>
+                <div class="physical-line" id="physLine"></div>
+            </div>
+        </div>
+
+        <div>
+            <div class="stack-title" style="color: #ffab91;">📥 RECEIVER (Decapsulation)</div>
+            <div class="osi-stack" id="receiverStack"></div>
+        </div>
+    </div>
+
+    <div class="encap-viz">
+        <div class="encap-title">📦 Encapsulation — Headers Added at Each Layer</div>
+        <div class="encap-layers" id="encapLayers"></div>
+    </div>
+
+    <div class="detail-panel" id="detailPanel">
+        <div class="detail-title" id="detailTitle" style="color: var(--accent-cyan);">👆 Click Any Layer to Explore</div>
+        <div class="detail-content" id="detailContent">
+            The OSI (Open Systems Interconnection) model is a conceptual framework that divides network communication into <strong>7 distinct layers</strong>, each with a specific role. Data flows <strong>down the sender's stack</strong> (adding headers) and <strong>up the receiver's stack</strong> (stripping headers). Click any layer to learn about its protocols, devices, and real-world role.
+        </div>
+    </div>
+
+    <div class="algo-info">
+        <div class="info-card">
+            <div class="info-title">🔻 Encapsulation (Sender)</div>
+            <div class="info-content">
+                Data travels <strong>top-down</strong> through layers 7→1. Each layer wraps the data with its own <strong>header</strong> (and sometimes trailer), adding addressing and control info — until Layer 1 transmits raw <strong>bits</strong> over the medium.
+            </div>
+        </div>
+        <div class="info-card">
+            <div class="info-title">🔺 Decapsulation (Receiver)</div>
+            <div class="info-content">
+                On the receiving end, data travels <strong>bottom-up</strong> from layers 1→7. Each layer <strong>reads and strips its own header</strong>, processes the relevant info, and passes the payload up — until the application receives the original data.
+            </div>
+        </div>
+        <div class="info-card">
+            <div class="info-title">🌐 Real-World Example</div>
+            <div class="info-content">
+                Sending an email: <strong>SMTP (L7)</strong> composes it, <strong>TLS (L6)</strong> encrypts it, <strong>TCP (L4)</strong> segments it, <strong>IP (L3)</strong> routes it, <strong>Ethernet (L2)</strong> frames it, and <strong>Wi-Fi (L1)</strong> transmits the bits.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const layers = [
+    {
+        num: 7, name: "Application", rowClass: "row-7", color: "var(--l7)",
+        pdu: "Data", protocols: "HTTP, FTP, SMTP, DNS, SSH", icon: "🌐",
+        header: "App Header",
+        desc: "The <strong>Application Layer</strong> is the topmost layer — it's the interface between network services and user applications.",
+        role: "Provides high-level APIs for applications to access network services. Handles resource sharing, remote access, and directory services.",
+        examples: "Web browsers (HTTP/HTTPS), email clients (SMTP/IMAP), file transfer (FTP), DNS lookups",
+        details: [
+            { label: "PDU", value: "Data / Message" },
+            { label: "Key Protocols", value: "HTTP, FTP, SMTP, DNS" },
+            { label: "Devices", value: "Application Servers" },
+            { label: "Function", value: "User Interface to Network" }
+        ]
+    },
+    {
+        num: 6, name: "Presentation", rowClass: "row-6", color: "var(--l6)",
+        pdu: "Data", protocols: "SSL/TLS, JPEG, MPEG, ASCII", icon: "🔐",
+        header: "Format/Crypto Header",
+        desc: "The <strong>Presentation Layer</strong> is the network's translator — it converts, encrypts, and compresses data.",
+        role: "Translates data between application format and network format. Handles encryption/decryption, data compression, and character encoding conversion.",
+        examples: "SSL/TLS encryption, JPEG/MPEG compression, ASCII↔Unicode conversion",
+        details: [
+            { label: "PDU", value: "Data" },
+            { label: "Key Protocols", value: "SSL, TLS, JPEG, MPEG" },
+            { label: "Devices", value: "Gateways" },
+            { label: "Function", value: "Encryption & Translation" }
+        ]
+    },
+    {
+        num: 5, name: "Session", rowClass: "row-5", color: "var(--l5)",
+        pdu: "Data", protocols: "NetBIOS, RPC, SIP, PPTP", icon: "🤝",
+        header: "Session Token",
+        desc: "The <strong>Session Layer</strong> manages the dialog between two communicating devices — opening, maintaining, and closing sessions.",
+        role: "Establishes, synchronizes, and terminates communication sessions. Handles checkpointing for long transfers and re-establishing dropped sessions.",
+        examples: "Login sessions, video conferences, API sessions, online banking transactions",
+        details: [
+            { label: "PDU", value: "Data" },
+            { label: "Key Protocols", value: "RPC, SIP, NetBIOS" },
+            { label: "Devices", value: "Gateways" },
+            { label: "Function", value: "Session Management" }
+        ]
+    },
+    {
+        num: 4, name: "Transport", rowClass: "row-4", color: "var(--l4)",
+        pdu: "Segment", protocols: "TCP, UDP, SCTP", icon: "🚚",
+        header: "TCP/UDP Header",
+        desc: "The <strong>Transport Layer</strong> ensures complete, reliable data transfer between end hosts.",
+        role: "Segments data, manages flow control, error correction, and port-based addressing. TCP = reliable & ordered; UDP = fast & connectionless.",
+        examples: "TCP connections (web, email), UDP streams (video, DNS, gaming), port numbers",
+        details: [
+            { label: "PDU", value: "Segment (TCP) / Datagram (UDP)" },
+            { label: "Key Protocols", value: "TCP, UDP, SCTP" },
+            { label: "Devices", value: "Firewalls, Load Balancers" },
+            { label: "Function", value: "End-to-End Reliability" }
+        ]
+    },
+    {
+        num: 3, name: "Network", rowClass: "row-3", color: "var(--l3)",
+        pdu: "Packet", protocols: "IP, ICMP, OSPF, BGP, RIP", icon: "🗺️",
+        header: "IP Header",
+        desc: "The <strong>Network Layer</strong> handles logical addressing and determines the best route for data across multiple networks.",
+        role: "Uses IP addresses for logical addressing and routing. Routers use routing algorithms (OSPF, BGP) to find the best path from source to destination.",
+        examples: "IP addressing, routers, traceroute, ping (ICMP), BGP between ISPs",
+        details: [
+            { label: "PDU", value: "Packet" },
+            { label: "Key Protocols", value: "IPv4, IPv6, ICMP, OSPF" },
+            { label: "Devices", value: "Routers, Layer-3 Switches" },
+            { label: "Function", value: "Logical Addressing & Routing" }
+        ]
+    },
+    {
+        num: 2, name: "Data Link", rowClass: "row-2", color: "var(--l2)",
+        pdu: "Frame", protocols: "Ethernet, Wi-Fi (802.11), ARP, PPP", icon: "🔗",
+        header: "Ethernet Header + Trailer",
+        desc: "The <strong>Data Link Layer</strong> handles node-to-node transfer on the same network segment using MAC addresses.",
+        role: "Frames packets for transmission, handles error detection/correction at the link level, and manages access to the shared physical medium (CSMA/CD).",
+        examples: "Ethernet frames, MAC addresses, switches, bridges, ARP resolution",
+        details: [
+            { label: "PDU", value: "Frame" },
+            { label: "Key Protocols", value: "Ethernet, 802.11, ARP" },
+            { label: "Devices", value: "Switches, Bridges, NICs" },
+            { label: "Function", value: "MAC Addressing & Framing" }
+        ]
+    },
+    {
+        num: 1, name: "Physical", rowClass: "row-1", color: "var(--l1)",
+        pdu: "Bits", protocols: "Ethernet cable, Fiber, Wi-Fi signals, DSL", icon: "⚡",
+        header: "Raw Bits",
+        desc: "The <strong>Physical Layer</strong> is the bottom layer — it transmits raw binary bits (0s and 1s) over a physical medium.",
+        role: "Defines electrical, optical, and mechanical characteristics of the transmission medium. Converts data frames to signals for cables, fiber, or wireless.",
+        examples: "Ethernet cables (Cat5e/Cat6), fiber optic, Wi-Fi radio signals, hubs, repeaters",
+        details: [
+            { label: "PDU", value: "Bits (0s and 1s)" },
+            { label: "Key Standards", value: "IEEE 802.3, DSL, USB" },
+            { label: "Devices", value: "Hubs, Repeaters, Cables" },
+            { label: "Function", value: "Bit Transmission Over Medium" }
+        ]
+    }
+];
+
+let isAnimating = false;
+
+// Layer colors as CSS hex values for JS use
+const layerColors = {
+    7: '#ff6b6b', 6: '#ff9f43', 5: '#ffd32a',
+    4: '#0be881', 3: '#00d2d3', 2: '#54a0ff', 1: '#a29bfe'
+};
+
+function buildStacks() {
+    const sender = document.getElementById('senderStack');
+    const receiver = document.getElementById('receiverStack');
+    layers.forEach(layer => {
+        sender.appendChild(makeRow(layer, 'sender'));
+        receiver.appendChild(makeRow(layer, 'receiver'));
+    });
+    buildEncap();
+}
+
+function makeRow(layer, side) {
+    const div = document.createElement('div');
+    div.className = `layer-row ${layer.rowClass}`;
+    div.id = `${side}-${layer.num}`;
+    div.onclick = () => showDetail(layer);
+    div.innerHTML = `
+        <div class="layer-num">${layer.num}</div>
+        <div class="layer-body">
+            <div class="layer-name">${layer.icon} ${layer.name}</div>
+            <div class="layer-protocols">${layer.protocols}</div>
+        </div>
+        <div class="layer-pdu">${layer.pdu}</div>
+    `;
+    return div;
+}
+
+const encapInfo = [
+    { label: "Application Data", bg: '#ff6b6b', width: 180 },
+    { label: "Presentation Header | Data", bg: '#ff9f43', width: 230 },
+    { label: "Session Header | ...", bg: '#ffd32a', width: 280 },
+    { label: "TCP/UDP Header | ...", bg: '#0be881', width: 340 },
+    { label: "IP Header | ...", bg: '#00d2d3', width: 400 },
+    { label: "Ethernet Header | ... | Trailer", bg: '#54a0ff', width: 470 },
+    { label: "⚡ 01011010 01101001 10110100 (Bits)", bg: '#a29bfe', width: 550 },
+];
+
+function buildEncap() {
+    const container = document.getElementById('encapLayers');
+    encapInfo.forEach((item, i) => {
+        const el = document.createElement('div');
+        el.className = 'encap-layer';
+        el.id = `encap-${i}`;
+        el.style.width = item.width + 'px';
+        el.style.maxWidth = '100%';
+        if (i === 0) {
+            el.innerHTML = `<div class="encap-header" style="background:${item.bg}; flex:1; justify-content:center;">${item.label}</div>`;
+        } else {
+            const [left, right] = item.label.split('|');
+            el.innerHTML = `
+                <div class="encap-header" style="background:${item.bg};">${left.trim()}</div>
+                <div class="encap-data">${right ? right.trim() : '...'}</div>
+            `;
+        }
+        container.appendChild(el);
+    });
+}
+
+function showDetail(layer) {
+    if (isAnimating) return;
+    document.querySelectorAll('.layer-row').forEach(r => r.classList.remove('active'));
+    document.getElementById(`sender-${layer.num}`).classList.add('active');
+    document.getElementById(`receiver-${layer.num}`).classList.add('active');
+
+    document.getElementById('detailTitle').style.color = layer.color;
+    document.getElementById('detailTitle').textContent = `${layer.icon} Layer ${layer.num}: ${layer.name} Layer`;
+
+    const grid = layer.details.map(d => `
+        <div class="detail-item">
+            <div class="detail-item-label">${d.label}</div>
+            <div class="detail-item-value" style="color:${layer.color}">${d.value}</div>
+        </div>
+    `).join('');
+
+    document.getElementById('detailContent').innerHTML = `
+        <p>${layer.desc}</p><br>
+        <p><strong>Role:</strong> ${layer.role}</p><br>
+        <p><strong>Real-World Examples:</strong> ${layer.examples}</p>
+        <div class="detail-grid">${grid}</div>
+    `;
+
+    updateStatus(`LAYER ${layer.num}: ${layer.name.toUpperCase()}`, `PDU: ${layer.pdu} | Protocols: ${layer.protocols}`);
+}
+
+// Layer top positions in channel (7 layers evenly distributed)
+function layerTop(idx) {
+    // idx 0 = top (L7), idx 6 = bottom (L1)
+    return 3 + idx * 13.5;
+}
+
+async function startAnimation() {
+    if (isAnimating) return;
+    isAnimating = true;
+    document.getElementById('runBtn').disabled = true;
+
+    resetVisuals(false);
+    await sleep(400);
+
+    const pkt = document.getElementById('travelPacket');
+    const physLine = document.getElementById('physLine');
+
+    // ---- PHASE 1: Sender encapsulation (L7 → L1) ----
+    updateStatus('ENCAPSULATING ↓', 'Data traveling down the sender stack — adding headers at each layer...');
+
+    pkt.style.display = 'block';
+    pkt.style.top = layerTop(0) + '%';
+    pkt.style.background = layerColors[7];
+    pkt.textContent = '💬 App Data';
+
+    for (let i = 0; i < layers.length; i++) {
+        const layer = layers[i];
+
+        document.querySelectorAll('.layer-row').forEach(r => r.classList.remove('active'));
+        document.getElementById(`sender-${layer.num}`).classList.add('active');
+
+        pkt.style.top = layerTop(i) + '%';
+        pkt.style.background = layerColors[layer.num];
+        pkt.textContent = getPacketLabel(layer.num, 'down');
+
+        updateStatus(`LAYER ${layer.num} ↓ — ${layer.name.toUpperCase()}`, `Adding ${layer.header} | PDU becomes: ${layer.pdu}`);
+
+        // Show encap block
+        const encapEl = document.getElementById(`encap-${i}`);
+        if (encapEl) encapEl.classList.add('visible');
+
+        await sleep(750);
+    }
+
+    // Physical medium glow
+    physLine.style.opacity = '1';
+    pkt.textContent = '⚡ 01011010...';
+    pkt.style.top = '91%';
+    updateStatus('TRANSMITTING ⚡', 'Bits traveling across the physical medium to the receiver...');
+    await sleep(900);
+
+    // ---- PHASE 2: Receiver decapsulation (L1 → L7) ----
+    updateStatus('DECAPSULATING ↑', 'Receiver processing bits, stripping headers layer by layer...');
+    physLine.style.opacity = '0';
+
+    for (let i = 6; i >= 0; i--) {
+        const layer = layers[i];
+        const revIdx = 6 - i; // 0 = L1 at bottom, 6 = L7 at top
+
+        document.querySelectorAll('.layer-row').forEach(r => r.classList.remove('active'));
+        document.getElementById(`receiver-${layer.num}`).classList.add('active');
+
+        pkt.style.top = layerTop(revIdx) + '%';
+        pkt.style.background = layerColors[layer.num];
+        pkt.textContent = getPacketLabel(layer.num, 'up');
+
+        updateStatus(`LAYER ${layer.num} ↑ — ${layer.name.toUpperCase()}`, `Stripping ${layer.header} | Passing ${layer.pdu} upward`);
+
+        // Strip encap from bottom up
+        const encapEl = document.getElementById(`encap-${i}`);
+        if (encapEl) encapEl.classList.add('stripped');
+
+        await sleep(750);
+    }
+
+    // Delivered!
+    pkt.style.top = '2%';
+    pkt.style.background = '#64ffda';
+    pkt.textContent = '✅ Data Delivered';
+    document.querySelectorAll('.layer-row').forEach(r => r.classList.remove('active'));
+    document.getElementById(`receiver-7`).classList.add('active');
+    updateStatus('DELIVERED ✓', 'Application on the receiver successfully received the original data!');
+
+    await sleep(1800);
+    pkt.style.display = 'none';
+    document.querySelectorAll('.layer-row').forEach(r => r.classList.remove('active'));
+
+    isAnimating = false;
+    document.getElementById('runBtn').disabled = false;
+}
+
+function getPacketLabel(layerNum, dir) {
+    const labels = {
+        7: '💬 App Data',
+        6: '🔐 Encrypted',
+        5: '🤝 Sessioned',
+        4: '🚚 Segment',
+        3: '🗺️ Packet',
+        2: '🔗 Frame',
+        1: '⚡ Bits'
+    };
+    return labels[layerNum] || 'Data';
+}
+
+function resetVisuals(full = true) {
+    document.querySelectorAll('.layer-row').forEach(r => r.classList.remove('active'));
+    document.querySelectorAll('.encap-layer').forEach(el => {
+        el.classList.remove('visible', 'stripped');
+    });
+    const pkt = document.getElementById('travelPacket');
+    pkt.style.display = 'none';
+    document.getElementById('physLine').style.opacity = '0';
+
+    if (full) {
+        document.getElementById('detailTitle').textContent = '👆 Click Any Layer to Explore';
+        document.getElementById('detailTitle').style.color = 'var(--accent-cyan)';
+        document.getElementById('detailContent').innerHTML = 'The OSI model divides network communication into <strong>7 distinct layers</strong>. Click any layer to learn about its protocols, devices, and real-world role.';
+        updateStatus('READY', 'Click a layer to explore it, or press "Animate Data Flow" to watch encapsulation & decapsulation in action');
+    }
+}
+
+function resetAll() {
+    if (isAnimating) return;
+    resetVisuals(true);
+}
+
+function updateStatus(phase, desc) {
+    document.getElementById('statusPhase').textContent = phase;
+    document.getElementById('statusDesc').textContent = desc;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+buildStacks();
+</script>
+</body>
+</html>
