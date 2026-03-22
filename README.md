@@ -14,8 +14,6 @@
 
 <br/>
 
-![NetScope Preview](preview.png)
-
 </div>
 
 ---
