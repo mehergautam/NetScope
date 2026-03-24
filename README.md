@@ -81,7 +81,7 @@ Contributions are welcome! If you'd like to add a new topic or improve an existi
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details
 
 ---
 
