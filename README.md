@@ -84,6 +84,11 @@ Contributions are welcome! If you'd like to add a new topic or improve an existi
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details
 
 ---
+## 📄 Research Publication
+
+This project has been formally documented as a research paper.
+
+**Published on Zenodo:** [Read Paper](https://doi.org/10.5281/zenodo.15209164)
 
 <div align="center">
 
