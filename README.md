@@ -88,7 +88,7 @@ This project is licensed under the **MIT License** — see the [LICENSE](LICENSE
 ---
 ## 📄 Research Publication
 
-This project has been formally documented as a research paper.
+This project has been formally documented as a research paper
 
 **Published on Zenodo:** [Read Paper](https://doi.org/10.5281/zenodo.15209164)
 
